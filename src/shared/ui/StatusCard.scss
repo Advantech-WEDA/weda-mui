@@ -1,0 +1,45 @@
+.device-status {
+  display: flex;
+  flex-wrap: wrap;
+  padding: var(--padding--2);
+  align-items: flex-start;
+  gap: var(--padding--2);
+  align-self: stretch;
+
+  @media (min-width: 1200px) {
+    flex-wrap: nowrap;
+  }
+
+  &__card {
+    border-radius: var(--borderRadius, 4px);
+    border: 1px solid
+      var(--_components-paper-outlineBorder, rgba(0, 0, 0, 0.12));
+    display: flex;
+    height: 120px;
+    min-width: 200px;
+    min-height: 120px;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1 1 200px;
+
+    @media (min-width: 1200px) {
+      min-width: 0;
+      flex: 1 1 0;
+    }
+  }
+
+  &__label {
+    display: flex;
+    height: 38px;
+    padding: var(--1, 8px) var(--padding--2);
+    align-items: center;
+  }
+
+  &__value {
+    display: flex;
+    height: 60px;
+    padding: var(--05, 4px) var(--padding--2) var(--padding--2)
+      var(--padding--2);
+    align-items: center;
+  }
+}

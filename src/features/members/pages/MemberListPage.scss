@@ -1,0 +1,47 @@
+.members-list {
+  min-height: 100%;
+  background-color: #fff;
+  padding: 24px;
+
+  .members-paper {
+    background-color: #fff;
+    overflow: hidden;
+
+    .members-title {
+      font-size: 32px;
+      color: var(--text-primary);
+    }
+
+    .members-toolbar {
+      padding: 16px;
+
+      .members-btn {
+        height: 40px;
+        text-transform: none;
+        padding: 4px 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 24px;
+      }
+
+      .members-add-btn {
+        width: 120px;
+      }
+
+      .members-search {
+        width: 240px;
+
+        .MuiOutlinedInput-root {
+          height: 40px;
+          padding: 8px 12px;
+
+          input {
+            padding: 0;
+            height: 24px;
+          }
+        }
+      }
+    }
+  }
+}

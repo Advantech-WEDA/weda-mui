@@ -1,0 +1,35 @@
+.scopes {
+  .scopes-header {
+    padding: 16px;
+    height: 84px;
+  }
+  .scopes-desc {
+    margin-bottom: 16px;
+  }
+
+  .scopes-table-wrap {
+    margin: 16px;
+    border: 1px solid var(--divider, rgba(0, 0, 0, 0.12));
+  }
+  .scopes-table-cell {
+    height: 56px;
+    padding: 4px 16px;
+  }
+
+  .scopes-name {
+    line-height: 143%;
+    letter-spacing: 0.17px;
+  }
+  .scopes-error {
+    border: 1px solid var(--error-main, #d32f2f);
+    border-radius: 4px;
+  }
+  .scopes-error-text {
+    padding: 0 14px;
+    margin: 0 16px 16px;
+    color: var(--error-main, #d32f2f);
+    font-size: 12px;
+    line-height: 166%;
+    letter-spacing: 0.4px;
+  }
+}

@@ -1,0 +1,46 @@
+.page-action-btn {
+  &.MuiButtonBase-root {
+    display: flex;
+    height: 40px;
+    min-width: 120px;
+    padding: var(--05,) var(--2,);
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .MuiButton-startIcon {
+    display: flex;
+    align-items: center;
+  }
+
+  &__icon {
+    color: var(--primary-contrastText,);
+  }
+  &--add.MuiTypography-button {
+    color: var(--primary-contrastText,);
+    text-transform: none;
+    line-height: 24px;
+    letter-spacing: 0.4px;
+  }
+  &--clear.MuiTypography-button {
+    color: var(--primary-main,);
+    text-transform: none;
+    line-height: 24px;
+    letter-spacing: 0.4px;
+  }
+}
+
+.page-search-field {
+  display: flex;
+  min-width: 200px;
+  max-width: 240px;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 0 0;
+
+  .MuiOutlinedInput-root {
+    height: 40px;
+    padding: 8px 12px;
+  }
+}

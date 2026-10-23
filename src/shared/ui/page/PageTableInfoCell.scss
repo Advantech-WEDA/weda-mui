@@ -1,0 +1,31 @@
+.page-table-info-cell {
+  &__primary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.MuiTypography-body2 {
+      font-size: var(--font-size-0875-rem, 14px);
+      color: var(--text-primary,);
+      font-weight: var(--fontWeightMedium, 500);
+    }
+  }
+
+  &__secondary {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--text-secondary);
+
+    font-size: var(--typography-body2, 14px);
+
+    font-weight: var(--fontWeightRegular, 400);
+  }
+
+  &__ellipsis {
+    overflow: hidden;
+    color: var(--primary-main);
+    text-overflow: ellipsis;
+    font-weight: var(--fontWeightMedium, 500);
+  }
+}

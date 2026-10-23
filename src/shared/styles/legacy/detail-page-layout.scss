@@ -1,0 +1,124 @@
+.detail-page {
+  &__content {
+    .page-paper {
+      width: 100%;
+      background-color: var(--_components-paper-elevation-1);
+      overflow: hidden;
+    }
+
+    .page-search {
+      width: 220px;
+
+      .MuiOutlinedInput-root {
+        height: 40px;
+        padding: 8px 12px;
+
+        input {
+          padding: 0;
+          height: 24px;
+        }
+      }
+    }
+
+    .page-table-wrap {
+      background-color: var(--_components-paper-elevation-1);
+
+      .page-table-row {
+        height: 56px;
+        border-bottom: 1px solid var(--divider);
+
+        & td {
+          padding-top: 8px;
+          padding-bottom: 8px;
+        }
+
+        &:hover {
+          background: var(--action-hover);
+        }
+      }
+    }
+
+    .page-table-empty-state,
+    .search-empty {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: var(--1, 8px);
+      text-align: center;
+
+      &-desc {
+        margin-bottom: 16px;
+      }
+    }
+
+    .page-table-empty-state-btn {
+      height: 40px;
+      text-transform: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 24px;
+      flex-direction: row;
+      padding: 4px 16px;
+    }
+  }
+  .editor-page__form {
+    display: flex;
+    max-width: 800px;
+    padding: var(--padding--2);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--padding--2);
+    align-self: stretch;
+
+    .required {
+      color: var(--error-main, #d32f2f);
+      margin-left: 2px;
+    }
+
+    .MuiOutlinedInput-root {
+      min-height: 56px;
+    }
+
+    .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 0.01px;
+        transition: max-width 150ms cubic-bezier(0, 0, 0.2, 1);
+      }
+    }
+
+    .MuiInputLabel-shrink
+      + .MuiOutlinedInput-root
+      .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 150px;
+      }
+    }
+
+    &-wrapper {
+      width: 100%;
+
+      &-textfield {
+        background-color: #fff;
+        & input {
+          background-color: #fff;
+        }
+      }
+
+      &-select {
+        width: 100%;
+      }
+
+      &-helper {
+        height: 23px;
+        padding: 3px 14px;
+        color: var(--text-secondary, rgba(0, 0, 0, 0.6));
+        font-size: var(--font-size-075-rem, 12px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 166%;
+        letter-spacing: 0.4px;
+      }
+    }
+  }
+}

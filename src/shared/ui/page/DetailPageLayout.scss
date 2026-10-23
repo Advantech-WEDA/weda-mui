@@ -1,0 +1,80 @@
+.detail-page {
+  min-height: 100%;
+  background-color: #fff;
+  padding: 24px;
+
+  &__header {
+    min-height: 74px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: space-between;
+
+    &-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    &-title {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      height: 40px;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+
+      h4 {
+        font-size: var(--typography-h4, 32px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 123.5%;
+        letter-spacing: 0.25px;
+      }
+    }
+
+    &-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+
+      & button {
+        height: 42px;
+        text-transform: none;
+        display: flex;
+        padding: var(--1, 8px) var(--padding--2);
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        border-radius: var(--borderRadius, 4px);
+        font-size: var(--font-size-09375-rem, 15px);
+        font-weight: var(--fontWeightMedium, 500);
+        line-height: 26px;
+        letter-spacing: 0.46px;
+        color: var(--primary-main, #1976d2);
+      }
+    }
+  }
+
+  &__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    min-width: 0;
+
+    &:hover {
+      background-color: var(--action-hover);
+    }
+  }
+
+  &__tabs {
+    height: 42px;
+    display: flex;
+  }
+
+  &__content {
+    gap: 24px;
+  }
+}

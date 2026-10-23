@@ -1,0 +1,29 @@
+@charset 'UTF-8';
+
+@use './tokens' as *;
+@use './theme' as *;
+@use './reset' as *;
+@use '@shared/styles/legacy/page-list-layout' as *;
+@use '@shared/styles/legacy/editor-page-layout' as *;
+@use '@shared/styles/legacy/detail-page-layout' as *;
+html {
+  color-scheme: light;
+}
+
+body,
+input,
+button,
+textarea,
+select {
+  font-family: Roboto, 'Microsoft JhengHei', sans-serif, arial;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notistack-SnackbarContainer {
+  top: 80px !important;
+}

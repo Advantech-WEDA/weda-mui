@@ -1,0 +1,57 @@
+.admin-popover {
+  .admin-popover__content {
+    width: 360px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: var(--1, 8px) 0;
+    border-radius: var(--borderRadius, 4px);
+    background: var(--_components-paper-elevation-8, #fff);
+    box-shadow:
+      0 3px 14px 2px rgba(0, 0, 0, 0.12),
+      0 8px 10px 1px rgba(0, 0, 0, 0.14),
+      0 5px 5px -3px rgba(0, 0, 0, 0.2);
+
+    &-item {
+      height: 40px;
+      padding: var(--1, 8px) var(--2, 16px);
+      display: flex;
+      flex-direction: row;
+      gap: var(--2, 16px);
+      transition: background-color 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--action-hover, rgba(0, 0, 0, 0.04));
+      }
+
+      &-avatar {
+        background: var(--_components-avatar-fill, #bdbdbd);
+        color: var(--_components-paper-elevation-0, #fff);
+        text-align: center;
+        font-feature-settings:
+          'liga' off,
+          'clig' off;
+        font-size: var(--font-size-075-rem, 12px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 12px;
+      }
+
+      &-text {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+      }
+
+      &-name {
+        line-height: '20px';
+      }
+
+      &-email {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: '18px';
+      }
+    }
+  }
+}

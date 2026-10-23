@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" style="color-scheme: light">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+
+        script-src
+          'self'
+          'wasm-unsafe-eval'
+          'unsafe-inline';
+
+        worker-src 'self';
+
+        style-src
+          'self'
+          'unsafe-inline'
+          https://fonts.googleapis.com;
+
+        font-src
+          'self'
+          https://fonts.gstatic.com
+          data:;
+
+        img-src
+          'self'
+          data:
+          https:;
+
+       connect-src
+       'self';
+
+        object-src 'none';
+
+        base-uri 'self';
+
+        form-action 'self';
+      "
+    />
+
+    <script>
+      if (/\/weda$/.test(window.location.pathname)) {
+        window.location.replace(
+          window.location.pathname +
+            '/' +
+            window.location.search +
+            window.location.hash
+        );
+      }
+    </script>
+
+    <script>
+      (function () {
+        const currentPath = window.location.pathname;
+
+        const match = currentPath.match(/^(\/[^\/]+\/weda)/i);
+
+        if (match) {
+          const basePath = match[1] + '/';
+
+          const base = document.createElement('base');
+
+          base.href = basePath;
+
+          document.head.appendChild(base);
+        }
+      })();
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.ico" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+    />
+
+    <title>WEDA</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script src="/runtime-config.js"></script>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

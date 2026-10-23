@@ -1,0 +1,20 @@
+.page-list .page-table__info-name {
+  color: var(--primary-main, #1976d2);
+}
+.page-action-btn {
+  &__icon {
+    color: var(--primary-contrastText,);
+  }
+}
+.ai-model-list-page {
+  &__toolbar {
+    width: 100%;
+  }
+
+  &__btn--refresh.MuiButton-root {
+    min-width: 40px;
+    padding-left: 0;
+    padding-right: 0;
+    color: var(--action-active);
+  }
+}

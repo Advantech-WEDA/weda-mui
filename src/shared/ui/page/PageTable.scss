@@ -1,0 +1,16 @@
+.page-table {
+
+  &__row {
+    height: 56px;
+
+    &--no-border {
+      .MuiTableCell-root {
+        border-bottom: 0;
+      }
+    }
+
+    &:hover {
+      background: var(--action-hover);
+    }
+  }
+}

@@ -1,0 +1,115 @@
+@charset "UTF-8";
+[data-theme='light'] {
+  --common-white-_states-main: #fff;
+  --_components-paper-elevation-1: #fff;
+  --05: 4px;
+  --1: 8px;
+  --2: 16px;
+  --3: 24px;
+  --primary-contrastText: #fff;
+
+  --typography-h4: 32px;
+  --divider: rgba(0, 0, 0, 0.12);
+  --border: rgba(0, 0, 0, 0.12);
+  --primary-_states-selected: rgba(25, 118, 210, 0.08);
+
+  --components-paper-outlineBorder: rgba(0, 0, 0, 0.12);
+  --icon-white-color: #fff;
+  --icon-color-: #fff;
+  --icon-white-in-bg-color-dark: #fff;
+  --icon-black-in-bg-color-light: #000;
+
+  --icon-color-active: rgba(0, 0, 0, 0.87);
+  --background-color: #fff;
+  --_components-avatar-fill: #bdbdbd;
+  --success-contrastText: #fff;
+  --_components-paper-outlineBorder: rgba(0, 0, 0, 0.12);
+  --_components-alert-success-background: #edf7ed;
+  --error-contrastText: #fff;
+  --_components-alert-error-background: #fdeded;
+  --_components-paper-elevation-0: #fff;
+  --info-contrastText: #fff;
+
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-disabled: rgba(0, 0, 0, 0.38);
+
+  --text-hover: rgba(0, 0, 0, 0.04);
+  --text-selected: rgba(0, 0, 0, 0.08);
+  --text-focus: rgba(0, 0, 0, 0.12);
+  --text-focus-visible: rgba(0, 0, 0, 0.3);
+  --primary-main: #1976d2;
+  --primary-dark: #1565c0;
+  --primary-light: #42a5f5;
+  --primary-contrast-text: rgba(255, 255, 255, 1);
+  --primary-hover: rgba(25, 118, 210, 0.04);
+  --primary-selected: rgba(25, 118, 210, 0.08);
+  --primary-focus: rgba(25, 118, 210, 0.12);
+  --primary-focus-visible: rgba(25, 118, 210, 0.3);
+  --primary-outlined-border: rgba(25, 118, 210, 0.5);
+  --secondary-main: #9c27b0;
+  --secondary-dark: #7b1fa2;
+  --secondary-light: #ba68c8;
+  --secondary-contrast-text: rgba(255, 255, 255, 1);
+  --secondary-hover: rgba(156, 39, 176, 0.04);
+  --secondary-selected: rgba(156, 39, 176, 0.08);
+  --secondary-focus: rgba(156, 39, 176, 0.12);
+  --secondary-focus-visible: rgba(156, 39, 176, 0.3);
+  --secondary-outlined-border: rgba(156, 39, 176, 0.5);
+  --action-active: rgba(0, 0, 0, 0.54);
+
+  --action-hover: rgba(0, 0, 0, 0.04);
+  --action-selected: rgba(0, 0, 0, 0.08);
+  --action-focus: rgba(0, 0, 0, 0.12);
+  --action-disabled: rgba(0, 0, 0, 0.26);
+  --action-disabled-background: rgba(0, 0, 0, 0.12);
+  --error-main: #d32f2f;
+  --error-dark: #c62828;
+  --error-light: #ef5350;
+  --error-contrast-text: rgba(255, 255, 255, 1);
+
+  --error-hover: rgba(211, 47, 47, 0.04);
+  --error-selected: rgba(211, 47, 47, 0.08);
+  --error-focus-visible: rgba(211, 47, 47, 0.3);
+  --error-outlined-border: rgba(211, 47, 47, 0.5);
+  --warning-main: #ef6c00;
+  --warning-dark: #e65100;
+  --warning-light: #ff9800;
+  --warning-contrast-text: rgba(255, 255, 255, 1);
+
+  --warning-hover: rgba(239, 108, 0, 0.04);
+  --warning-selected: rgba(239, 108, 0, 0.08);
+  --warning-focus-visible: rgba(239, 108, 0, 0.3);
+  --warning-outlined-border: rgba(239, 108, 0, 0.5);
+  --info-main: #0288d1;
+  --info-dark: #01579b;
+  --info-light: #03a9f4;
+  --info-contrast-text: rgba(255, 255, 255, 1);
+
+  --info-hover: rgba(2, 136, 209, 0.04);
+  --info-selected: rgba(2, 136, 209, 0.08);
+  --info-focus-visible: rgba(2, 136, 209, 0.3);
+  --info-outlined-border: rgba(2, 136, 209, 0.5);
+  --success-main: #2e7d32;
+  --success-dark: #1b5e20;
+  --success-light: #4caf50;
+  --success-contrast-text: rgba(255, 255, 255, 1);
+
+  --success-hover: rgba(46, 125, 50, 0.04);
+  --success-selected: rgba(46, 125, 50, 0.08);
+  --success-focus-visible: rgba(46, 125, 50, 0.3);
+  --success-outlined-border: rgba(46, 125, 50, 0.5);
+  --black-main: rgba(0, 0, 0, 1);
+  --black-hover: rgba(0, 0, 0, 0.04);
+  --black-selected: rgba(0, 0, 0, 0.08);
+  --black-focus: rgba(0, 0, 0, 0.12);
+  --black-focus-visible: rgba(0, 0, 0, 0.3);
+  --black-outlined-border: rgba(0, 0, 0, 0.5);
+
+  --white-main: rgba(255, 255, 255, 1);
+  --white-hover: rgba(255, 255, 255, 0.04);
+  --white-selected: rgba(255, 255, 255, 0.08);
+  --white-focus: rgba(255, 255, 255, 0.12);
+  --white-focus-visible: rgba(255, 255, 255, 0.3);
+  --white-outlined-border: rgba(255, 255, 255, 0.5);
+}

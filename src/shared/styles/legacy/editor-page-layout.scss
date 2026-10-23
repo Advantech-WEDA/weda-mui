@@ -1,0 +1,197 @@
+.editor-page {
+  min-height: 100%;
+  background-color: #fff;
+  padding: 24px;
+  &__header {
+    height: 121px;
+    padding: 16px;
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+    justify-content: space-between;
+
+    &-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    &-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+
+      > h4 {
+        min-width: 0;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        color: var(--text-primary, rgba(0, 0, 0, 0.87));
+        font-size: var(--typography-h4, 32px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 123.5%;
+        letter-spacing: 0.25px;
+      }
+
+      > p {
+        flex-shrink: 0;
+        white-space: nowrap;
+        color: var(--error-main);
+        font-size: var(--typography-body2, 14px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 143%;
+        letter-spacing: 0.17px;
+      }
+    }
+
+    &-actions {
+      flex-shrink: 0;
+      align-self: flex-start;
+      display: flex;
+      gap: 8px;
+
+      button {
+        height: 42px;
+        text-transform: none;
+        display: flex;
+        padding: var(--1, 8px) var(--2, 16px);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: var(--borderRadius, 4px);
+        font-size: var(--font-size-09375-rem, 15px);
+        font-weight: var(--fontWeightMedium, 500);
+        line-height: 26px;
+        letter-spacing: 0.46px;
+      }
+
+      &-btn-cancel {
+        border: 1px solid
+          var(--primary-_states-outlinedBorder, rgba(25, 118, 210, 0.5));
+        color: var(--primary-main, #1976d2);
+      }
+    }
+
+    &-divider {
+      height: 1px;
+      color: var(--divider);
+      margin-top: 16px;
+    }
+  }
+  &__content {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  &__left {
+    flex: 1;
+
+    &-section {
+      margin-bottom: var(--3, 24px);
+    }
+
+    &-title {
+      min-height: 64px;
+      padding: 16px;
+      color: var(--text-primary, rgba(0, 0, 0, 0.87));
+      line-height: 133.4%;
+    }
+  }
+  .editor-page__form {
+    display: flex;
+    max-width: 800px;
+    padding: var(--2, 16px);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--2, 16px);
+    align-self: stretch;
+
+    .required {
+      color: var(--error-main, #d32f2f);
+      margin-left: 2px;
+    }
+
+    .MuiOutlinedInput-root {
+      min-height: 56px;
+    }
+
+    .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 0.01px;
+        transition: max-width 150ms cubic-bezier(0, 0, 0.2, 1);
+      }
+    }
+
+    .MuiInputLabel-shrink
+      + .MuiOutlinedInput-root
+      .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 150px;
+      }
+    }
+
+    &-wrapper {
+      width: 100%;
+
+      &-textfield {
+        background-color: #fff;
+        & input {
+          background-color: #fff;
+        }
+      }
+
+      &-select {
+        width: 100%;
+      }
+
+      &-helper {
+        height: 23px;
+        padding: 3px 14px;
+        color: var(--text-secondary, rgba(0, 0, 0, 0.6));
+        font-size: var(--font-size-075-rem, 12px);
+        font-weight: var(--fontWeightRegular, 400);
+        line-height: 166%;
+        letter-spacing: 0.4px;
+      }
+    }
+  }
+  &__footer {
+    height: 74px;
+    display: flex;
+    padding: var(--2, 16px);
+    align-items: center;
+    gap: var(--1, 8px);
+    align-self: stretch;
+
+    button {
+      height: 42px;
+      text-transform: none;
+      display: flex;
+      padding: var(--1, 8px) var(--2, 16px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: var(--borderRadius, 4px);
+      font-size: var(--font-size-09375-rem, 15px);
+      font-weight: var(--fontWeightMedium, 500);
+      line-height: 26px;
+      letter-spacing: 0.46px;
+    }
+  }
+  &__right {
+    width: 272px;
+    flex-shrink: 0;
+    padding-right: 16px;
+
+    .member-btn {
+      width: 100%;
+      background: #e8f1fd;
+      border: 1px solid #c8daf8;
+      color: var(--primary-dark, #1565c0);
+      text-transform: none;
+    }
+  }
+}

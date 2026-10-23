@@ -1,0 +1,9 @@
+.page-table-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--1, 8px);
+
+  &__tooltip {
+    display: inline-flex;
+  }
+}

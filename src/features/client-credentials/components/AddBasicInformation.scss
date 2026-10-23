@@ -1,0 +1,59 @@
+.basic-info {
+  .basic-info-title {
+    height: 64px;
+    padding: 16px;
+  }
+  .basic-info-form {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .basic-info-field {
+    height: 79px;
+    label {
+      font-size: 12px;
+
+      span {
+        color: red;
+      }
+    }
+
+    input {
+      height: 24px;
+      padding: 16px 12px;
+    }
+  }
+
+  .basic-info-textfield {
+    .required {
+      color: var(--error-main, #d32f2f);
+      margin-left: 2px;
+    }
+
+    .MuiOutlinedInput-root {
+      min-height: 56px;
+    }
+
+    .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 0.01px;
+        transition: max-width 150ms cubic-bezier(0, 0, 0.2, 1);
+      }
+    }
+
+    .MuiInputLabel-shrink
+      + .MuiOutlinedInput-root
+      .MuiOutlinedInput-notchedOutline {
+      legend {
+        max-width: 80px;
+      }
+    }
+  }
+
+  .basic-info-helper {
+    height: 23px;
+    padding: 3px 14px 0;
+    font-size: 12px;
+    color: var(--text-secondary, rgba(0, 0, 0, 0.6));
+  }
+}

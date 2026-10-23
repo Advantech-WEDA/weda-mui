@@ -1,0 +1,15 @@
+.app-breadcrumbs {
+  font-size: var(--font-size-0875-rem, 14px);
+
+  &__link {
+    cursor: pointer;
+  }
+
+  &__current {
+    color: var(--text-primary);
+  }
+
+  &__separator {
+    color: var(--text-primary);
+  }
+}
