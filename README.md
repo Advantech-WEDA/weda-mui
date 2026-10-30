@@ -44,7 +44,6 @@ npm run verify     # lint + typecheck + build — run this after making changes
 npm run lint       # eslint . && stylelint src/**/*.scss
 npm run typecheck  # tsc -b
 npm run build      # vite build (type checking lives in `typecheck`, not in the build)
-npm run preview    # preview the production build
 ```
 
 ## Configuration
@@ -100,13 +99,11 @@ The browser only sends the Portal's cookie to the backend's domain, never to
 Authorization Code + PKCE client of `<VITE_ORIGIN>/identity` and exchanges
 that access token for its WEDA token. This needs:
 
-- An identity server that lets you register a public Authorization Code client
-  with PKCE. With desk-identity that is
-  `POST /identity/api/v1.0/external/authcode-clients`, called with a token
-  that has the `client:authcode:management` scope.
-- A client registered with exactly these values — the identity server compares
-  them character for character, and without the post-logout URI, Sign out ends
-  on the identity server's error page:
+- A public Authorization Code client with PKCE on that identity server. Ask
+  your identity server administrator to register it with exactly these
+  values — the identity server compares them character for character, and
+  without the post-logout URI, Sign out ends on the identity server's error
+  page:
 
   | Field                    | Value                                 |
   | ------------------------ | ------------------------------------- |
@@ -147,8 +144,11 @@ include that proxy or a backend-for-frontend.
 
 The same gateway must strip the `/{tenant}/weda` prefix before passing all
 other requests to the static host (for example `/central/weda/assets/app.js`
-→ `/assets/app.js`). Without it, every page loads blank. `npm run preview`
-does not strip the prefix, so app pages are blank there.
+→ `/assets/app.js`). Without it, every page loads blank.
+
+There is no local preview of the production build: it signs in only through
+the Portal's shared cookie, which never reaches `localhost`. Use `npm run dev`
+to run the app locally.
 
 ## Official support scope and known limitations
 
