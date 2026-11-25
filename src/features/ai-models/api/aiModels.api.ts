@@ -274,6 +274,7 @@ const postAiModelUploadSession = async (
     ),
     undefined,
     {
+      skipGlobalLoading: true,
       headers: {
         'Tus-Resumable': params.tusResumable ?? TUS_RESUMABLE_VERSION,
         'Upload-Length': params.uploadLength,
@@ -320,6 +321,7 @@ const patchAiModelUploadChunk = async (
     ),
     params.chunk,
     {
+      skipGlobalLoading: true,
       headers: {
         'Tus-Resumable': params.tusResumable ?? TUS_RESUMABLE_VERSION,
         'Upload-Offset': params.uploadOffset,
@@ -343,6 +345,7 @@ const deleteAiModelUpload = async (
       `/api/v1/orgs/${params.orgId}/ai-models/${params.modelId}/editions/${params.edition}/uploads/${params.uploadId}`
     ),
     {
+      skipGlobalLoading: true,
       headers: {
         'Tus-Resumable': params.tusResumable ?? TUS_RESUMABLE_VERSION,
       },

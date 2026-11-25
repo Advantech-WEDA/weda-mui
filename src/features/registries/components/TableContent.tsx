@@ -2,13 +2,13 @@ import { Link, TableCell } from '@mui/material';
 import { formatLocalTime } from '@shared/lib/dayjs';
 import {
   PageTableActionsCell,
-  PageTableEllipsisCell,
   PageTableInfoCell,
   PageTableRow,
 } from '@shared/ui';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { type IRegistryItem } from '../api/registries.api.types';
+import { getRegistryTypeLabel } from '../domain/types';
 
 interface IProps {
   row: IRegistryItem;
@@ -32,7 +32,7 @@ export default function TableContent({
               component={RouterLink}
               to={`../registries/${row.registryId}`}
               underline="hover"
-              color="inherit"
+              sx={{ color: 'var(--primary-main, #1976D2)' }}
             >
               {row.registryName ?? '-'}
             </Link>
@@ -42,10 +42,22 @@ export default function TableContent({
       </TableCell>
 
       <TableCell>
-        {row.registryEncryptedCredentials.registryType ?? '-'}
+        {getRegistryTypeLabel(row.registryEncryptedCredentials?.registryType)}
       </TableCell>
 
-      <PageTableEllipsisCell>{row.registryUrl ?? '-'}</PageTableEllipsisCell>
+      <TableCell
+        sx={{
+          width: 400,
+          maxWidth: 400,
+          boxSizing: 'border-box',
+          padding: '16px',
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
+          wordBreak: 'break-all',
+        }}
+      >
+        {row.registryUrl ?? '-'}
+      </TableCell>
 
       <TableCell>
         {row?.createdAt ? formatLocalTime(row.createdAt) : '-'}

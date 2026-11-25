@@ -31,7 +31,9 @@ export interface ManagementPermissions {
 
   canManageAiModels: boolean;
 
-  canManageMqttBrokerConfigs: boolean;
+  canManageMqttBrokers: boolean;
+
+  canManageDataStreamBridges: boolean;
 }
 
 export const useManagementPermission = (): ManagementPermissions => {
@@ -64,7 +66,8 @@ export const useManagementPermission = (): ManagementPermissions => {
     canChangeParentOrg: isOrgAdmin,
     canManageRegistries: isOrgAdmin || isOrgOperator,
     canManageAiModels: isOrgAdmin || isOrgOperator,
-    canManageMqttBrokerConfigs: isOrgAdmin || isOrgOperator,
+    canManageMqttBrokers: isOrgAdmin || isOrgOperator,
+    canManageDataStreamBridges: isOrgAdmin || isOrgOperator,
   };
 };
 

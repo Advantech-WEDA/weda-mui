@@ -45,6 +45,7 @@ interface IProps {
   visibleTotalCount: number;
   hasFilter: boolean;
   cancelOpen: boolean;
+  submitting: boolean;
   submitOpen: boolean;
   selectedDeviceIds: string[];
   setPage: (page: number) => void;
@@ -79,6 +80,7 @@ export default function EditorForm({
   visibleTotalCount,
   hasFilter,
   cancelOpen,
+  submitting,
   submitOpen,
   selectedDeviceIds,
   setPage,
@@ -130,7 +132,9 @@ export default function EditorForm({
             <Button
               variant="contained"
               className="editor-page__header-actions-btn-submit"
-              disabled={selectedDeviceIds.length === 0 || !hasPermission}
+              disabled={
+                selectedDeviceIds.length === 0 || !hasPermission || submitting
+              }
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedDeviceIds.length})
@@ -176,7 +180,7 @@ export default function EditorForm({
                     onChange={(value) =>
                       handleStatusFilterChange(value as Status | '')
                     }
-                    placeholder="Device status"
+                    placeholder="Registration status"
                     minWidth={147}
                     options={statusOptions}
                   />
@@ -236,7 +240,9 @@ export default function EditorForm({
               size="small"
               variant="contained"
               className="editor-page__footer__btn-submit"
-              disabled={selectedDeviceIds.length === 0}
+              disabled={
+                selectedDeviceIds.length === 0 || !hasPermission || submitting
+              }
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedDeviceIds.length})
@@ -251,7 +257,7 @@ export default function EditorForm({
 
       <ConfirmDialog
         open={cancelOpen}
-        onClose={onCancel}
+        onClose={onConfirmCancel}
         title="Unsaved Changes"
         content="Do you want to leave this page? Any unsaved changes will be lost."
         actions={[
@@ -272,6 +278,7 @@ export default function EditorForm({
         content={'Are you sure you want to deploy to selected devices?'}
         confirmLabel="Deploy"
         onClose={onConfirmCancel}
+        loading={submitting}
         onConfirm={onSubmit}
       />
     </Box>

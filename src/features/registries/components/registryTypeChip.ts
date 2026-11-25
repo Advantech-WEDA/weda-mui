@@ -1,13 +1,13 @@
 import type { Tone } from '@shared/ui';
 
-import type { RegistryType } from '../domain/types';
+import { REGISTRY_TYPE_LABEL, type RegistryType } from '../domain/types';
 
 export const REGISTRY_TYPE_CHIP: Record<
   RegistryType,
   { label: string; tone: Tone }
 > = {
-  DockerHub: { label: 'DockerHub', tone: 'primary' },
-  Custom: { label: 'Custom', tone: 'primary' },
-  AzureACR: { label: 'Azure ACR', tone: 'secondary' },
-  AwsECR: { label: 'AWS ECR', tone: 'secondary' },
+  DockerHub: { label: REGISTRY_TYPE_LABEL.DockerHub, tone: 'primary' },
+  Custom: { label: REGISTRY_TYPE_LABEL.Custom, tone: 'primary' },
+  AzureACR: { label: REGISTRY_TYPE_LABEL.AzureACR, tone: 'secondary' },
+  AwsECR: { label: REGISTRY_TYPE_LABEL.AwsECR, tone: 'secondary' },
 };

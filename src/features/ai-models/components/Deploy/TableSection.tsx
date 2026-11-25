@@ -19,10 +19,18 @@ import {
   SortTableHeader,
 } from '@shared/ui';
 
+import type { DeviceContainersState } from '@/features/ai-models/domain/deploySetup';
+
 import type { DeployDeviceRow } from '../../api/aiModels.api.types';
 import TableContent from './TableContent';
 
+const COLUMN_COUNT = 7;
+
 interface IProps {
+  isRestartContainer: boolean;
+  containerByDeviceId: Record<string, string>;
+  deviceContainers: Record<string, DeviceContainersState>;
+  onContainerChange: (deviceId: string, containerName: string) => void;
   rows: DeployDeviceRow[];
   totalCount: number;
   page: number;
@@ -42,6 +50,10 @@ interface IProps {
 }
 
 export default function TableSection({
+  isRestartContainer,
+  containerByDeviceId,
+  deviceContainers,
+  onContainerChange,
   rows,
   totalCount,
   page,
@@ -107,20 +119,35 @@ export default function TableSection({
               />
 
               <TableCell sx={{ width: 200 }}>Current edition</TableCell>
-              <TableCell sx={{ width: 200 }}>Device status</TableCell>
+              <TableCell sx={{ width: 200 }}>Registration status</TableCell>
               <TableCell sx={{ width: 200 }}>Connectivity</TableCell>
+              <TableCell sx={{ minWidth: 200 }}>
+                Restart container{' '}
+                <span
+                  className="required"
+                  style={{ color: 'var(--error-main, #D32F2F)' }}
+                >
+                  *
+                </span>
+              </TableCell>
               <TableCell sx={{ width: 200 }}>Last connected</TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {loading ? (
-              <TableCell colSpan={6} align="center">
-                <PageTableLoadingIndicator />
-              </TableCell>
+              <TableRow>
+                <TableCell colSpan={COLUMN_COUNT} align="center">
+                  <PageTableLoadingIndicator />
+                </TableCell>
+              </TableRow>
             ) : isInitialEmpty ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
+                <TableCell
+                  colSpan={COLUMN_COUNT}
+                  align="center"
+                  sx={{ py: 10 }}
+                >
                   <Box className="page-table-empty-state">
                     <Typography variant="h5" gutterBottom>
                       No devices, yet
@@ -130,7 +157,7 @@ export default function TableSection({
               </TableRow>
             ) : isFilterEmpty ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                <TableCell colSpan={COLUMN_COUNT} align="center" sx={{ py: 6 }}>
                   <Box className="search-empty">
                     <Typography variant="h5" gutterBottom>
                       No results found.
@@ -162,6 +189,10 @@ export default function TableSection({
                   row={row}
                   selected={selectedDeviceIds.includes(row.deviceId)}
                   disabledDeviceIds={disabledDeviceIds}
+                  isRestartContainer={isRestartContainer}
+                  containerName={containerByDeviceId[row.deviceId] ?? ''}
+                  containersState={deviceContainers[row.deviceId]}
+                  onContainerChange={onContainerChange}
                   onSelect={onSelectDevice}
                 />
               ))
@@ -176,7 +207,7 @@ export default function TableSection({
                   },
                 }}
               >
-                <TableCell colSpan={6} sx={{ p: 0 }}>
+                <TableCell colSpan={COLUMN_COUNT} sx={{ p: 0 }}>
                   <Pagination
                     count={totalCount}
                     page={page}

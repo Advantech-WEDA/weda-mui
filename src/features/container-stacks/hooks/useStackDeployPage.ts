@@ -47,6 +47,8 @@ export function useStackDeployPage() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const submittingRef = useRef(false);
+
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
   const [searchWord, setSearchWord] = useState('');
@@ -64,20 +66,19 @@ export function useStackDeployPage() {
   const latestTimerRef = useRef<number | null>(null);
 
   const loading = useDeviceStore((s) => s.loading);
-  const totalCount = useDeviceStore((s) => s.totalCount);
   const deviceItems = useDeviceStore((s) => s.deviceItems);
   const deviceLatestMap = useDeviceStore((s) => s.deviceLatestMap);
   const deploymentItems = useDeploymentsStore((s) => s.deploymentItems);
   const deploymentsLoading = useDeploymentsStore((s) => s.loading);
   const stackConfigById = useDeploymentsStore((s) => s.stackConfigById);
-  const GET_DEVICES = useDeviceStore((s) => s.GET_DEVICES);
+  const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
   const GET_DEVICE_LATEST_DATA = useDeviceStore(
     (s) => s.GET_DEVICE_LATEST_DATA
   );
   const GET_ALL_DEPLOYMENTS = useDeploymentsStore((s) => s.GET_ALL_DEPLOYMENTS);
 
   const pageTitle = stackConfigById
-    ? `Deploy "${stackConfigById.stackName}(v${stackConfigById.version})" to Device(s)"`
+    ? `Deploy "${stackConfigById.stackName}(v${stackConfigById.version})" to Device(s)`
     : 'Deploy to Device(s)';
 
   const fetchLatestDataByDeviceIds = useCallback(
@@ -122,11 +123,9 @@ export function useStackDeployPage() {
       }
 
       try {
-        await GET_DEVICES(
+        await GET_ALL_DEVICES(
           {
             orgId: currentOrgId,
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
             sorting: `${sortKey} ${sortOrder}`,
           },
           signal
@@ -148,11 +147,9 @@ export function useStackDeployPage() {
       sortKey,
       sortOrder,
       showError,
-      GET_DEVICES,
+      GET_ALL_DEVICES,
       GET_ALL_DEPLOYMENTS,
       stackRevisionId,
-      page,
-      rowsPerPage,
     ]
   );
 
@@ -160,6 +157,8 @@ export function useStackDeployPage() {
     const keyword = searchWord.trim().toLowerCase();
 
     return (deviceItems ?? []).filter((item) => {
+      if (item.type !== 'WedaNode') return false;
+
       const deviceName = item.deviceName?.toLowerCase() ?? '';
 
       const matchKeyword = !keyword || deviceName.includes(keyword);
@@ -171,7 +170,16 @@ export function useStackDeployPage() {
 
   const hasFilter = Boolean(searchWord || statusFilter || connectivityFilter);
 
-  const pagedDeviceItems = filteredDeviceItems;
+  const lastPage = Math.max(
+    0,
+    Math.ceil(filteredDeviceItems.length / rowsPerPage) - 1
+  );
+  const currentPage = Math.min(page, lastPage);
+
+  const pagedDeviceItems = filteredDeviceItems.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
 
   const displayRows: DeployDeviceRow[] = useMemo(() => {
     const deploymentStatusMap = new Map(
@@ -203,8 +211,7 @@ export function useStackDeployPage() {
       return (
         !isWedaNode(device) ||
         !isDeviceOperational(device.status) ||
-        (device.status === 'Activated' &&
-          device.deploymentStatus === 'deploying')
+        device.deploymentStatus != null
       );
     },
     []
@@ -265,7 +272,9 @@ export function useStackDeployPage() {
     setStatusFilter('');
     setConnectivityFilter('');
     setSortKey('deviceId');
-    setSortOrder('asc');
+    setSortOrder('desc');
+
+    setPage(0);
   };
 
   const handleSort = (key: TableHeaderSortKey) => {
@@ -281,10 +290,12 @@ export function useStackDeployPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const fetchStackConfigById = useCallback(
@@ -384,9 +395,11 @@ export function useStackDeployPage() {
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     if (!validateSubmit()) return;
+
+    submittingRef.current = true;
 
     try {
       setSubmitting(true);
@@ -406,9 +419,11 @@ export function useStackDeployPage() {
     } catch (error) {
       const message = getDeployErrorMessage(error, 'Deploy failed');
 
+      closeDialogs();
       showError(message);
       console.error('[DeployStack] Deploy failed:', error);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -426,6 +441,7 @@ export function useStackDeployPage() {
 
   return {
     cancelOpen,
+    submitting,
     submitOpen,
     selectedDeviceIds,
     handleSelectDevice,
@@ -447,12 +463,11 @@ export function useStackDeployPage() {
     selectableDeviceIds,
     searchWord,
     statusFilter,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
-
-    visibleTotalCount: hasFilter ? filteredDeviceItems.length : totalCount,
+    visibleTotalCount: filteredDeviceItems.length,
     hasFilter,
     setPage,
     setRowsPerPage,

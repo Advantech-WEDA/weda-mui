@@ -1,5 +1,6 @@
 import { useDeviceStore } from '@features/devices';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useHasManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { type SortOrder, useNotification } from '@shared/ui';
@@ -12,10 +13,14 @@ import type {
 } from '../api/stacks.api.types';
 import {
   type Action,
+  countStackStatusCards,
+  getStackStatusCard,
   type Status,
   type TableHeaderSortKey,
 } from '../domain/types';
 import { useDeploymentsStore } from '../store/useDeploymentsStore';
+import { type RedeployTarget, useRedeployConfirm } from './useRedeployConfirm';
+import { useStackCommand } from './useStackCommand';
 
 export function useStackListPage() {
   const navigate = useAppNavigate();
@@ -40,19 +45,19 @@ export function useStackListPage() {
   const [dialogOpenDeleteStack, setDialogOpenDeleteStack] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
-  const [totalCount, setTotalCount] = useState(0);
-
   const { currentOrgId } = useOrgContentStore();
   const hasPermission = useHasManagementPermission();
 
   const { showError, showSuccess } = useNotification();
-
+  const [totalCount, setTotalCount] = useState(0);
   const loading = useDeploymentsStore((s) => s.loading);
   const stackConfigsItems = useDeploymentsStore((s) => s.stackConfigsItems);
   const deploymentItems = useDeploymentsStore((s) => s.deploymentItems);
   const deviceItems = useDeviceStore((s) => s.deviceItems);
 
-  const GET_STACK_CONFIGS = useDeploymentsStore((s) => s.GET_STACK_CONFIGS);
+  const GET_ALL_STACK_CONFIGS = useDeploymentsStore(
+    (s) => s.GET_ALL_STACK_CONFIGS
+  );
   const GET_ALL_DEPLOYMENTS = useDeploymentsStore((s) => s.GET_ALL_DEPLOYMENTS);
   const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
 
@@ -63,63 +68,46 @@ export function useStackListPage() {
     (s) => s.DELETE_STACK_FROM_DEVICE
   );
 
-  const POST_STACK_ACTION = useDeploymentsStore((s) => s.POST_STACK_ACTION);
+  const { runStackCommand } = useStackCommand();
 
   const POST_DEPLOY_STACK_TO_DEVICES = useDeploymentsStore(
     (s) => s.POST_DEPLOY_STACK_TO_DEVICES
   );
 
   const fetchStacksList = useCallback(
-    async (signal?: AbortSignal): Promise<void> => {
+    async (signal?: AbortSignal): Promise<boolean> => {
       if (!currentOrgId) {
         showError('No Org ID');
-        return;
+        return false;
       }
+      let stacksLoaded = false;
 
       try {
-        const stackResponse = await GET_STACK_CONFIGS(
-          {
-            orgId: currentOrgId,
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
-            sorting: `${sortKey} ${sortOrder}`,
-          },
+        await GET_ALL_STACK_CONFIGS(
+          { orgId: currentOrgId, sorting: 'createdAt desc' },
           signal
         );
-
+        stacksLoaded = true;
         setLoadError(false);
-        setTotalCount(stackResponse.totalCount);
-
-        const revisionIds = stackResponse.items
-          .map((item) => item.stackRevisionId)
-          .filter(Boolean);
-
-        if (!revisionIds.length) {
-          return;
-        }
 
         await GET_ALL_DEVICES({ orgId: currentOrgId }, signal);
 
-        await GET_ALL_DEPLOYMENTS(
-          { orgId: currentOrgId, stackRevisionId: revisionIds },
-          signal
-        );
+        await GET_ALL_DEPLOYMENTS({ orgId: currentOrgId }, signal);
+        return true;
       } catch (error) {
-        if (axios.isCancel(error)) return;
+        if (axios.isCancel(error)) return false;
 
         const message = error instanceof Error ? error.message : String(error);
+        if (!stacksLoaded) setTotalCount(0);
         setLoadError(true);
         showError(message);
+        return false;
       }
     },
     [
       currentOrgId,
-      page,
-      rowsPerPage,
-      sortKey,
-      sortOrder,
       showError,
-      GET_STACK_CONFIGS,
+      GET_ALL_STACK_CONFIGS,
       GET_ALL_DEPLOYMENTS,
       GET_ALL_DEVICES,
     ]
@@ -138,8 +126,16 @@ export function useStackListPage() {
     return () => controller.abort();
   }, [fetchStacksList]);
 
-  const rows = useMemo<StackWithDeployments[]>(() => {
-    const keyword = searchWord.trim().toLowerCase();
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: stackConfigsItems?.length ?? 0,
+    loading,
+  });
+
+  const allRows = useMemo<StackWithDeployments[]>(() => {
     const deploymentMap = new Map<string, DeploymentWithDeviceName[]>();
 
     deploymentItems.forEach((deployment) => {
@@ -159,53 +155,49 @@ export function useStackListPage() {
       deploymentMap.get(key)?.push(enrichedDeployment);
     });
 
-    return (stackConfigsItems ?? [])
-      .map((stack) => ({
-        ...stack,
-        deployments: deploymentMap.get(stack.stackRevisionId) ?? [],
-      }))
-      .filter((stack) => {
-        const matchStatus =
-          !statusFilter ||
-          stack.deployments.some(
-            (deployment) =>
-              deployment?.status?.toLowerCase() === statusFilter.toLowerCase()
-          );
+    return (stackConfigsItems ?? []).map((stack) => ({
+      ...stack,
+      deployments: deploymentMap.get(stack.stackRevisionId) ?? [],
+    }));
+  }, [stackConfigsItems, deploymentItems, deviceItems]);
 
-        const stackName = stack.stackName?.toLowerCase() ?? '';
-        const stackType = stack.type?.toLowerCase() ?? '';
+  const rows = useMemo<StackWithDeployments[]>(() => {
+    const keyword = searchWord.trim().toLowerCase();
 
-        const matchKeyword = !keyword || stackName.includes(keyword);
-        const matchType = !typeFilter || stackType === typeFilter;
+    return allRows.filter((stack) => {
+      const matchStatus =
+        !statusFilter ||
+        stack.deployments.some(
+          (deployment) =>
+            getStackStatusCard(deployment?.status) === statusFilter
+        );
 
-        return matchKeyword && matchType && matchStatus;
-      });
-  }, [
-    stackConfigsItems,
-    deploymentItems,
-    deviceItems,
-    searchWord,
-    statusFilter,
-    typeFilter,
-  ]);
+      const stackName = stack.stackName?.toLowerCase() ?? '';
+      const stackType = stack.type?.toLowerCase() ?? '';
 
-  const pagedRows = rows;
+      const matchKeyword = !keyword || stackName.includes(keyword);
+      const matchType = !typeFilter || stackType === typeFilter;
+
+      return matchKeyword && matchType && matchStatus;
+    });
+  }, [allRows, searchWord, statusFilter, typeFilter]);
+
+  const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+
+  const pagedRows = rows.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
 
   const hasFilter = Boolean(searchWord.trim() || statusFilter || typeFilter);
 
-  const visibleTotalCount = hasFilter ? rows.length : totalCount;
+  const visibleTotalCount = rows.length;
 
-  const statusCounts = useMemo<Partial<Record<Status, number>>>(() => {
-    return {
-      pending: deploymentItems.filter((v) => v.status === 'pending').length,
-      deploying: deploymentItems.filter((v) => v.status === 'deploying').length,
-      running: deploymentItems.filter((v) => v.status === 'running').length,
-      paused: deploymentItems.filter((v) => v.status === 'paused').length,
-      error: deploymentItems.filter((v) => v.status === 'error').length,
-      exited: deploymentItems.filter((v) => v.status === 'exited').length,
-      retry: deploymentItems.filter((v) => v.status === 'retry').length,
-    };
-  }, [deploymentItems]);
+  const statusCounts = useMemo<Partial<Record<Status, number>>>(
+    () => countStackStatusCards(allRows.flatMap((stack) => stack.deployments)),
+    [allRows]
+  );
 
   const handleClearFilters = () => {
     setSearchWord('');
@@ -213,6 +205,7 @@ export function useStackListPage() {
     setStatusFilter('');
     setSortKey('createdAt');
     setSortOrder('desc');
+    setPage(0);
   };
 
   const handleClose = () => {
@@ -236,11 +229,11 @@ export function useStackListPage() {
     [navigate, hasPermission]
   );
 
-  const handleRedeploy = async (
-    deviceId: string,
-    stackConfigId: string,
-    stackRevisionId: string
-  ) => {
+  const redeploy = async ({
+    deviceId,
+    stackConfigId,
+    stackRevisionId,
+  }: RedeployTarget) => {
     if (!hasPermission) return;
 
     if (!currentOrgId) {
@@ -259,8 +252,6 @@ export function useStackListPage() {
       showSuccess('Stack deployed successfully');
 
       fetchStacksList();
-
-      handleClose();
     } catch (err: unknown) {
       let message = 'Stack deploy failed';
 
@@ -270,10 +261,28 @@ export function useStackListPage() {
 
       showError(message);
       console.error('[Stack deploy] failed:', message);
-    } finally {
-      handleClose();
     }
   };
+
+  const {
+    redeployTarget,
+    redeployLoading,
+    handleOpenRedeploy,
+    handleCloseRedeploy,
+    handleConfirmRedeploy,
+  } = useRedeployConfirm(redeploy);
+
+  const deleteStackRow = rows.find(
+    (row) =>
+      row.stackConfigId === selectedDeleteStack?.stackConfigId &&
+      row.deployments.some(
+        (deployment) => deployment.deviceId === selectedDeleteStack?.deviceId
+      )
+  );
+
+  const redeployStack = rows.find(
+    (row) => row.stackRevisionId === redeployTarget?.stackRevisionId
+  );
 
   const handleEdit = useCallback(
     (stackConfigId: string, stackRevisionId: string) => {
@@ -285,21 +294,16 @@ export function useStackListPage() {
   );
 
   const handleRefresh = async () => {
-    try {
-      await fetchStacksList();
+    const ok = await fetchStacksList();
+    if (!ok) return;
 
-      showSuccess('Container Stacks list refreshed');
-
-      setPage(0);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Refresh Container Stacks list failed';
-
-      showError(message);
-    }
+    showSuccess('Container Stacks list refreshed');
+    setPage(0);
   };
+
+  const handleRetryFetch = useCallback(() => {
+    fetchStacksList();
+  }, [fetchStacksList]);
 
   const handleSort = (key: TableHeaderSortKey) => {
     if (sortKey === key) {
@@ -386,46 +390,32 @@ export function useStackListPage() {
   ) => {
     if (!hasPermission) return;
 
-    try {
-      await POST_STACK_ACTION({
-        deviceId,
-        stackConfigId,
-        action,
-      });
+    await runStackCommand(
+      { deviceId, stackConfigId, action },
+      { onStatusUnknown: () => fetchStacksList() }
+    );
 
-      showSuccess('Stack action performed successfully');
-
-      fetchStacksList();
-
-      handleClose();
-    } catch (err: unknown) {
-      let message = 'Stack action failed';
-
-      if (err instanceof Error) {
-        message = err.message;
-      }
-
-      showError(message);
-      console.error('[Stack action] failed:', message);
-    } finally {
-      handleClose();
-    }
+    handleClose();
   };
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusCardChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handleTypeFilterChange = (value: string) => {
     setTypeFilter(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -443,26 +433,44 @@ export function useStackListPage() {
     typeFilter,
     hasFilter,
     selectedItem,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
     dialogOpen,
     dialogOpenDeleteStack,
+    deleteStackDialog: {
+      stackName: deleteStackRow?.stackName,
+      version: deleteStackRow?.version,
+      deviceName: deleteStackRow?.deployments.find(
+        (deployment) => deployment.deviceId === selectedDeleteStack?.deviceId
+      )?.deviceName,
+    },
     setDialogOpen,
     setDialogOpenDeleteStack,
     hasPermission,
-    loading,
+    loading: loading || isResolvingPage,
     loadError,
     pagedRows,
     rows,
     visibleTotalCount,
     statusCounts,
     handleClearFilters,
-    handleRetryFetch: fetchStacksList,
+    handleRetryFetch,
     handleAdd,
     handleDeploy,
-    handleRedeploy,
+    handleRedeploy: handleOpenRedeploy,
+    redeployDialog: {
+      open: redeployTarget !== null,
+      stackName: redeployStack?.stackName,
+      version: redeployStack?.version,
+      deviceName: redeployStack?.deployments.find(
+        (deployment) => deployment.deviceId === redeployTarget?.deviceId
+      )?.deviceName,
+      loading: redeployLoading,
+      onClose: handleCloseRedeploy,
+      onConfirm: handleConfirmRedeploy,
+    },
     handleEdit,
     handleRefresh,
     handleSort,

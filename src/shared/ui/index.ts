@@ -8,9 +8,11 @@ export {
   default as ConfirmDialog,
   type DialogAction,
 } from './dialog/ConfirmDialog';
+export { default as DeleteConfirmDialog } from './dialog/DeleteConfirmDialog';
 export { default as RevokeDialog } from './dialog/RevokeDialog';
 export { default as SimpleConfirmDialog } from './dialog/SimpleConfirmDialog';
 export { default as UnsavedChangesDialog } from './dialog/UnsavedChangesDialog';
+export { default as GlobalLoadingOverlay } from './feedback/GlobalLoadingOverlay';
 export { default as useNotification } from './feedback/useNotification';
 export {
   default as DetailPageLayout,

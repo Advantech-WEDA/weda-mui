@@ -2,15 +2,16 @@ import './ContainerStackListPage.scss';
 
 import { Button, Stack, Typography } from '@mui/material';
 import {
+  DeleteConfirmDialog,
   PageActionButton,
   PageListLayout,
   PageSearchField,
   SelectElement,
-  SimpleConfirmDialog,
   StatusCard,
   SvgIcon,
 } from '@shared/ui';
 
+import RedeployStackDialog from '../components/RedeployStackDialog';
 import { statusOptions } from '../components/stackStatusCards';
 import { COLUMNS } from '../components/stackTable.columns';
 import { typeOptions } from '../components/stackTypeOptions';
@@ -29,6 +30,7 @@ export default function Stacks() {
     rowsPerPage,
     dialogOpen,
     dialogOpenDeleteStack,
+    deleteStackDialog,
     setDialogOpen,
     setDialogOpenDeleteStack,
     hasPermission,
@@ -42,6 +44,7 @@ export default function Stacks() {
     handleAdd,
     handleDeploy,
     handleRedeploy,
+    redeployDialog,
     handleEdit,
     handleRefresh,
     handleOpenDelete,
@@ -104,8 +107,8 @@ export default function Stacks() {
               onChange={(value) =>
                 handleStatusFilterChange(value as Status | '')
               }
-              placeholder="Deployment status"
-              minWidth={184}
+              placeholder="Stack status"
+              minWidth={220}
               options={statusOptions}
             />
 
@@ -159,26 +162,31 @@ export default function Stacks() {
         onAdd={handleAdd}
       />
 
-      <SimpleConfirmDialog
+      <DeleteConfirmDialog
         open={dialogOpen}
         title="Delete Container Stack"
         content={`Are you sure you want to delete stack "${selectedItem?.stackName}" (v${selectedItem?.version})? This action cannot be undone. All active deployments using this stack will continue to run but will no longer receive updates.`}
-        confirmLabel="Delete"
+        confirmName={selectedItem?.stackName ?? ''}
+        nameLabel="stack"
         onClose={() => {
           setDialogOpen(false);
         }}
         onConfirm={handleConfirmDelete}
       />
-      <SimpleConfirmDialog
+      <DeleteConfirmDialog
         open={dialogOpenDeleteStack}
-        title="Delete Container Stack"
-        content={`Are you sure you want to delete stack "${selectedItem?.stackName}" (v${selectedItem?.version})? This action cannot be undone. All active deployments using this stack will continue to run but will no longer receive updates.`}
-        confirmLabel="Delete"
+        title="Delete deployment"
+        content={`Are you sure you want to delete the deployment of "${deleteStackDialog.stackName}" (v${deleteStackDialog.version}) on ${deleteStackDialog.deviceName ? `"${deleteStackDialog.deviceName}"` : 'this device'}? This action cannot be undone.`}
+        confirmName={
+          deleteStackDialog.deviceName || deleteStackDialog.stackName || ''
+        }
+        nameLabel={deleteStackDialog.deviceName ? 'device' : 'stack'}
         onClose={() => {
           setDialogOpenDeleteStack(false);
         }}
         onConfirm={handleConfirmDeleteStack}
       />
+      <RedeployStackDialog {...redeployDialog} />
     </PageListLayout>
   );
 }

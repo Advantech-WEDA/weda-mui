@@ -1,4 +1,6 @@
+import { ApiError } from '@shared/api/ApiError';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { type SortOrder, useNotification } from '@shared/ui';
@@ -11,11 +13,13 @@ import type { IRegistryItem } from '../api/registries.api.types';
 import {
   applyRegistryChange,
   applyRegistryTypeChange,
+  applyServerFieldErrors,
   buildRegistryCredentialsPayload,
   INITIAL_REGISTRY_DATA,
   INITIAL_REGISTRY_ERRORS,
   isCredentialsCategory,
   isCredentialsComplete,
+  validateOnChange,
   validateRegistryForm,
 } from '../domain/registry.rules';
 import {
@@ -45,6 +49,12 @@ export function useRegistriesPage() {
   const hasPermission = useManagementPermission().canManageRegistries;
 
   const { currentOrgId } = useOrgContentStore();
+
+  const [prevOrgId, setPrevOrgId] = useState(currentOrgId);
+  if (prevOrgId !== currentOrgId) {
+    setPrevOrgId(currentOrgId);
+    setPage(0);
+  }
 
   const [selectedItem, setSelectedItem] = useState<IRegistryItem | null>(null);
 
@@ -76,6 +86,7 @@ export function useRegistriesPage() {
         if (axios.isCancel(error)) return;
 
         setRegistriesList([]);
+        setTotalCount(0);
         setLoadError(true);
         showError(
           error instanceof Error
@@ -98,6 +109,15 @@ export function useRegistriesPage() {
 
     return () => controller.abort();
   }, [fetchRegistries]);
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: registriesList.length,
+    loading,
+  });
 
   const filteredRows = useMemo(() => {
     const keyword = searchWord.trim().toLowerCase();
@@ -204,12 +224,15 @@ export function useRegistriesPage() {
     rowsPerPage,
     sortKey,
     sortOrder,
-    loading,
+    loading: loading || isResolvingPage,
     hasError: loadError,
     hasFilter,
     hasPermission,
     onSort: handleSort,
-    onRetry: fetchRegistries,
+
+    onRetry: () => {
+      void fetchRegistries();
+    },
     onClearAll: handleClearFilters,
     onPageChange: (newPage: number) => setPage(newPage),
     onRowsPerPageChange: (rows: number) => {
@@ -340,12 +363,16 @@ export function useRegistryEditorPage(mode: 'add' | 'edit') {
     const shouldResetCredentials =
       mode === 'edit' && !credentialsDirty && isCredentialsCategory(category);
 
-    setRegistryData((prev) => {
-      const base = shouldResetCredentials
-        ? applyRegistryTypeChange(prev, prev.registryCredentials.registryType)
-        : prev;
-      return applyRegistryChange(base, category, registryType, value);
-    });
+    const base = shouldResetCredentials
+      ? applyRegistryTypeChange(
+          registryData,
+          registryData.registryCredentials.registryType
+        )
+      : registryData;
+    const nextData = applyRegistryChange(base, category, registryType, value);
+
+    setRegistryData(nextData);
+    setErrors((prev) => validateOnChange(prev, nextData, category));
 
     if (shouldResetCredentials) setCredentialsDirty(true);
   };
@@ -393,6 +420,11 @@ export function useRegistryEditorPage(mode: 'add' | 'edit') {
 
       const message = err instanceof Error ? err.message : fallback;
       showError(message);
+
+      if (err instanceof ApiError) {
+        const { fieldErrors } = err;
+        setErrors((prev) => applyServerFieldErrors(prev, fieldErrors));
+      }
 
       console.error(
         `[${mode === 'add' ? 'AddRegistry' : 'EditRegistry'}] Submit failed:`,

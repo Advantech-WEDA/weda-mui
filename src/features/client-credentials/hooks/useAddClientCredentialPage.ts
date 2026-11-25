@@ -1,6 +1,6 @@
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
 import { useNotification } from '@shared/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   buildScopesPayload,
@@ -62,7 +62,12 @@ export function useAddClientCredentialPage() {
     );
   };
 
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
+
     const isValidScope = hasSelectedScope(scopes);
 
     if (!basicInfo.name.trim()) {
@@ -84,6 +89,9 @@ export function useAddClientCredentialPage() {
       scopes: buildScopesPayload(scopes),
     };
 
+    submittingRef.current = true;
+    setSubmitting(true);
+
     try {
       const res = await POST_CLIENT_CREDENTIALS(formData);
 
@@ -96,6 +104,8 @@ export function useAddClientCredentialPage() {
 
       setOpenDialog(true);
     } catch (error) {
+      submittingRef.current = false;
+      setSubmitting(false);
       showError(
         error instanceof Error
           ? error.message
@@ -132,6 +142,7 @@ export function useAddClientCredentialPage() {
     nameError,
     openDialog,
     clientData,
+    submitting,
     handleBasicChange,
     handleScopeChange,
     handleSubmit,

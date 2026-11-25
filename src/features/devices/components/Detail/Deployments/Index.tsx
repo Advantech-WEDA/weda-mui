@@ -9,11 +9,10 @@ import StacksView from './StacksView';
 interface IProps {
   deploymentItems: IDeploymentItem[];
   loading: boolean;
-  totalCount: number;
   rowsPerPage: number;
   onRowsPerPageChange: (rows: number) => void;
   onFetchDeployments: (
-    params: Omit<IGetListStacksInDeviceParams, 'deviceId'>,
+    params: Pick<IGetListStacksInDeviceParams, 'sorting'>,
     signal?: AbortSignal
   ) => Promise<unknown>;
 }

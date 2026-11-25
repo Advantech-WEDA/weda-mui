@@ -1,4 +1,4 @@
-import { RevokeDialog, SimpleConfirmDialog } from '@shared/ui';
+import { RevokeDialog } from '@shared/ui';
 
 import DeviceAiModelEditionDetailContent from '@/features/devices/components/DeviceAiModelEditionDetailContent';
 import { useDeviceAiModelEditionDetailPage } from '@/features/devices/hooks/useDeviceAiModelEditionDetailPage';
@@ -9,16 +9,11 @@ export default function DeviceAiModelEditionDetailPage() {
     hasPermission,
     modelItem,
     editionDetail,
-    redeployOpen,
     deleteOpen,
     inputValue,
     setInputValue,
     canDelete,
-    canRedeploy,
     handleBack,
-    handleRedeployConfirmOpen,
-    handleCloseRedeployDialog,
-    handleConfirmRedeploy,
     handleDeleteConfirmOpen,
     handleCloseDeleteDialog,
     handleConfirmDelete,
@@ -32,19 +27,8 @@ export default function DeviceAiModelEditionDetailPage() {
         hasPermission={hasPermission}
         modelItem={modelItem}
         editionDetail={editionDetail}
-        canRedeploy={canRedeploy}
         onBack={handleBack}
-        onRedeploy={handleRedeployConfirmOpen}
         onOpenDeleteDialog={handleDeleteConfirmOpen}
-      />
-
-      <SimpleConfirmDialog
-        open={redeployOpen}
-        title="Redeploy AI model"
-        content={`Are you sure you want to redeploy "${modelItem?.modelName}" (${editionDetail?.edition}) to this device?`}
-        confirmLabel="Redeploy"
-        onClose={handleCloseRedeployDialog}
-        onConfirm={handleConfirmRedeploy}
       />
 
       <RevokeDialog

@@ -9,12 +9,13 @@ import {
 } from '@mui/material';
 import dayjs from '@shared/lib/dayjs';
 import {
+  DeleteConfirmDialog,
   SelectElement,
-  SimpleConfirmDialog,
   type SortOrder,
   StatusCard,
   SvgIcon,
 } from '@shared/ui';
+import type { ComponentProps } from 'react';
 
 import {
   type Action,
@@ -23,6 +24,7 @@ import {
   type Status,
   type TableHeaderSortKey,
 } from '../../../domain/types';
+import RedeployStackDialog from '../../RedeployStackDialog';
 import { statusOptions } from '../../stackStatusCards';
 import TableSection from './TableSection';
 
@@ -39,6 +41,10 @@ export interface DeploymentsViewProps {
   sortKey: TableHeaderSortKey;
   sortOrder: SortOrder;
   dialogOpenDeleteStack: boolean;
+
+  deleteStackDeviceName: string;
+
+  deleteStackName: string;
   visibleTotalCount: number;
   hasFilter: boolean;
   setPage: (page: number) => void;
@@ -63,6 +69,7 @@ export interface DeploymentsViewProps {
     stackConfigId: string,
     stackRevisionId: string
   ) => void | Promise<void>;
+  redeployDialog: ComponentProps<typeof RedeployStackDialog>;
 }
 
 export default function DeploymentsView({
@@ -78,6 +85,8 @@ export default function DeploymentsView({
   sortKey,
   sortOrder,
   dialogOpenDeleteStack,
+  deleteStackDeviceName,
+  deleteStackName,
   visibleTotalCount,
   hasFilter,
   setPage,
@@ -93,6 +102,7 @@ export default function DeploymentsView({
   handleConfirmDeleteStack,
   handleAction,
   handleDeploy,
+  redeployDialog,
 }: DeploymentsViewProps) {
   return (
     <Box component="article">
@@ -107,7 +117,7 @@ export default function DeploymentsView({
           }}
         >
           <Typography variant="h5" color="var(--text-primary)">
-            Deployment status
+            Stack status
           </Typography>
           <Typography variant="body2" color="var(--text-secondary)">
             Last updated:{' '}
@@ -191,8 +201,8 @@ export default function DeploymentsView({
                 onChange={(value) =>
                   handleStatusFilterChange(value as Status | '')
                 }
-                placeholder="Container status"
-                minWidth={184}
+                placeholder="Stack status"
+                minWidth={220}
                 options={statusOptions}
               />
             </Box>
@@ -231,16 +241,21 @@ export default function DeploymentsView({
           onDeploy={handleDeploy}
         />
 
-        <SimpleConfirmDialog
+        <DeleteConfirmDialog
           open={dialogOpenDeleteStack}
           title="Delete deployment"
           content={
-            'Are you sure you want to delete this deployment? This action cannot be undone.'
+            deleteStackDeviceName
+              ? `Are you sure you want to delete this deployment from "${deleteStackDeviceName}"? This action cannot be undone.`
+              : 'Are you sure you want to delete this deployment? This action cannot be undone.'
           }
-          confirmLabel="Delete"
+          confirmName={deleteStackDeviceName || deleteStackName}
+          nameLabel={deleteStackDeviceName ? 'device' : 'stack'}
           onClose={handleClose}
           onConfirm={handleConfirmDeleteStack}
         />
+
+        <RedeployStackDialog {...redeployDialog} />
       </Paper>
     </Box>
   );

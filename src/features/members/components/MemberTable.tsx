@@ -18,7 +18,7 @@ import {
 import { formatLocalTime } from '@shared/lib/dayjs';
 import {
   AppChip,
-  ConfirmDialog,
+  DeleteConfirmDialog,
   PageTableEmptyState,
   type SortOrder,
   SortTableHeader,
@@ -402,7 +402,7 @@ export default function MemberTable({
         </Table>
       </TableContainer>
 
-      <ConfirmDialog
+      <DeleteConfirmDialog
         open={deleteOpen}
         onClose={() => handleCloseDialog()}
         title={
@@ -412,19 +412,12 @@ export default function MemberTable({
         }
         content={
           targetMember
-            ? `Are you sure you want to delete ${targetMember} from ${currentOrgName} and all its sub-orgs? All settings will be deleted.`
-            : 'Are you sure you want to delete members? All settings will be deleted.'
+            ? `Are you sure you want to delete "${targetMember}" from "${currentOrgName}" and all its sub-orgs? All settings will be deleted.`
+            : `Are you sure you want to delete members from "${currentOrgName}"? All settings will be deleted.`
         }
-        actions={[
-          {
-            label: 'Cancel',
-            onClick: () => handleCloseDialog(),
-          },
-          {
-            label: 'Delete',
-            onClick: handleConfirmDelete,
-          },
-        ]}
+        confirmName={targetMember ?? currentOrgName ?? ''}
+        nameLabel={targetMember ? 'member' : 'organization'}
+        onConfirm={handleConfirmDelete}
       />
     </Box>
   );

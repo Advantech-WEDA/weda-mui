@@ -4,6 +4,7 @@ import { getTenant } from '@shared/lib/baseUrl';
 import axios, { AxiosError } from 'axios';
 
 import { decideAuthErrorAction } from './authErrorPolicy';
+import { beginWrite, endWrite } from './pendingWrites';
 
 export const AUTH_REDIRECT_KEY = 'weda_auth_redirecting';
 
@@ -21,6 +22,10 @@ function isWithinRedirectCooldown(): boolean {
 declare module 'axios' {
   export interface AxiosRequestConfig {
     _authRetried?: boolean;
+
+    skipGlobalLoading?: boolean;
+
+    _loadingCounted?: boolean;
   }
 }
 
@@ -53,6 +58,8 @@ export function isSameOriginRequestUrl(url: string | undefined): boolean {
 }
 
 axiosInstance.interceptors.request.use((requestConfig) => {
+  beginWrite(requestConfig);
+
   if (
     !requestConfig.headers.Authorization &&
     accessTokenGetter &&
@@ -115,7 +122,10 @@ function refreshTokenOnce(): Promise<void> {
 }
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    endWrite(response.config);
+    return response;
+  },
   async (error: AxiosError) => {
     const status = error.response?.status;
     const requestUrl = error.config?.url ?? '';
@@ -132,6 +142,7 @@ axiosInstance.interceptors.response.use(
       try {
         await refreshTokenOnce();
       } catch {
+        endWrite(error.config);
         redirectToLoginOnce();
         return Promise.reject(error);
       }
@@ -142,6 +153,7 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(error.config);
     }
 
+    endWrite(error.config);
     return Promise.reject(error);
   }
 );

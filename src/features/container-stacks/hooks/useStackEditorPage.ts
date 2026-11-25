@@ -9,6 +9,7 @@ import type {
   ICreateStackConfigPayload,
   IUpdateStackConfigPayload,
 } from '../api/stacks.api.types';
+import { getStackNameErrorMessage } from '../domain/stackName.rules';
 import {
   DEFAULT_STACK_TYPE,
   type IEnvironmentVariable,
@@ -127,11 +128,14 @@ export function useStackEditorPage(mode: 'add' | 'edit') {
 
   const validate = () => {
     const newErrors: IStackErrors = {
-      stackName: !stackData.stackName.trim(),
+      stackName: Boolean(getStackNameErrorMessage(stackData.stackName)),
       type: !stackData.type,
       stackFile: {
         type: !stackData.composeFileContent,
-        message: '',
+
+        message: stackData.composeFileContent
+          ? ''
+          : errors.stackFile.message || 'Docker compose file is required.',
       },
     };
 
@@ -226,6 +230,13 @@ export function useStackEditorPage(mode: 'add' | 'edit') {
       ...prev,
       [category]: value ?? '',
     }));
+
+    if (category === 'stackName') {
+      setErrors((prev) => ({
+        ...prev,
+        stackName: Boolean(getStackNameErrorMessage(value ?? '')),
+      }));
+    }
   };
 
   const handleStackFileChange = async (file: File | null) => {

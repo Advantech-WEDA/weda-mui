@@ -1,6 +1,7 @@
 import {
   type Action,
   type IDeploymentItem,
+  RedeployStackDialog,
   type Status,
   statusOptions,
   type TableHeaderSortKey,
@@ -8,15 +9,16 @@ import {
 import { Button, Stack, Typography } from '@mui/material';
 import dayjs from '@shared/lib/dayjs';
 import {
+  DeleteConfirmDialog,
   PageActionButton,
   PageListLayout,
   PageSearchField,
   SelectElement,
-  SimpleConfirmDialog,
   type SortOrder,
   StatusCard,
   SvgIcon,
 } from '@shared/ui';
+import type { ComponentProps } from 'react';
 
 import { CONTAINER_STACKS_REFRESH_INTERVAL } from '../../../domain/types';
 import TableSection from './TableSection';
@@ -61,6 +63,7 @@ export interface StacksViewProps {
     stackConfigId: string,
     stackRevisionId: string
   ) => void | Promise<void>;
+  redeployDialog: ComponentProps<typeof RedeployStackDialog>;
 }
 
 export default function StacksView({
@@ -94,10 +97,11 @@ export default function StacksView({
   handleConfirmDeleteStack,
   handleAction,
   handleDeploy,
+  redeployDialog,
 }: StacksViewProps) {
   return (
     <PageListLayout
-      title="Deployment status"
+      title="Stack status"
       hasBreadcrumbs={false}
       disableGutters
       subtitle={
@@ -153,8 +157,8 @@ export default function StacksView({
               onChange={(value) =>
                 handleStatusFilterChange(value as Status | '')
               }
-              placeholder="Deployment status"
-              minWidth={184}
+              placeholder="Stack status"
+              minWidth={220}
               options={statusOptions}
             />
 
@@ -204,16 +208,19 @@ export default function StacksView({
         onDeploy={handleDeploy}
       />
 
-      <SimpleConfirmDialog
+      <DeleteConfirmDialog
         open={dialogOpenDeleteStack}
         title="Delete Container Stack"
         content={`Are you sure you want to delete stack "${selectedStackName}" (v${selectedStackVersion})? This action cannot be undone. All active deployments using this stack will continue to run but will no longer receive updates.`}
-        confirmLabel="Delete"
+        confirmName={selectedStackName ?? ''}
+        nameLabel="stack"
         onClose={() => {
           setDialogOpenDeleteStack(false);
         }}
         onConfirm={handleConfirmDeleteStack}
       />
+
+      <RedeployStackDialog {...redeployDialog} />
     </PageListLayout>
   );
 }

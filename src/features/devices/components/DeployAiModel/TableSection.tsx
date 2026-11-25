@@ -15,9 +15,26 @@ import {
 import { Pagination } from '@shared/ui';
 
 import TableContent from '@/features/devices/components/DeployAiModel/TableContent';
-import type { AiModelDeployTableRow } from '@/features/devices/domain/types';
+import type {
+  AiModelDeployTableRow,
+  DeviceContainerNamesState,
+} from '@/features/devices/domain/types';
+
+const COLUMN_COUNT = 7;
+
+const requiredMark = (
+  <Box component="span" sx={{ color: 'var(--error-main, #D32F2F)' }}>
+    {' '}
+    *
+  </Box>
+);
 
 interface IProps {
+  isRestartContainer: boolean;
+  isChecksumVerify: boolean;
+  containerByModelId: Record<string, string>;
+  deviceContainers: DeviceContainerNamesState | null;
+  onContainerChange: (modelId: string, containerName: string) => void;
   rows: AiModelDeployTableRow[];
   totalCount: number;
   page: number;
@@ -35,6 +52,11 @@ interface IProps {
 }
 
 export default function TableSection({
+  isRestartContainer,
+  isChecksumVerify,
+  containerByModelId,
+  deviceContainers,
+  onContainerChange,
   rows,
   totalCount,
   page,
@@ -91,21 +113,31 @@ export default function TableSection({
                   onChange={onSelectAll}
                 />
               </TableCell>
-              <TableCell sx={{ width: 400 }}>AI model</TableCell>
+              <TableCell sx={{ minWidth: 160 }}>AI model</TableCell>
               <TableCell sx={{ width: 200 }}>
                 Edition
                 <Box component="span" sx={{ color: 'error.main' }}>
                   *
                 </Box>
               </TableCell>
-              <TableCell sx={{ width: 200 }}>Filename</TableCell>
+              <TableCell sx={{ minWidth: 120 }}>File name</TableCell>
+              <TableCell sx={{ minWidth: 100 }}>File size</TableCell>
+              <TableCell sx={{ minWidth: 160 }}>Expected checksum</TableCell>
+              <TableCell sx={{ minWidth: 180 }}>
+                Restart container
+                {requiredMark}
+              </TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {isInitialEmpty ? (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 10 }}>
+                <TableCell
+                  colSpan={COLUMN_COUNT}
+                  align="center"
+                  sx={{ py: 10 }}
+                >
                   <Box className="page-table-empty-state">
                     <Typography variant="h5" gutterBottom>
                       No AI model available, yet
@@ -115,7 +147,7 @@ export default function TableSection({
               </TableRow>
             ) : isFilterEmpty ? (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
+                <TableCell colSpan={COLUMN_COUNT} align="center" sx={{ py: 6 }}>
                   <Box className="search-empty">
                     <Typography variant="h5" gutterBottom>
                       No results found.
@@ -149,6 +181,11 @@ export default function TableSection({
                   onSelect={onSelectModel}
                   hasPermission={hasPermission}
                   onEditionChange={onEditionChange}
+                  isRestartContainer={isRestartContainer}
+                  isChecksumVerify={isChecksumVerify}
+                  containerName={containerByModelId[row.modelId] ?? ''}
+                  deviceContainers={deviceContainers}
+                  onContainerChange={onContainerChange}
                 />
               ))
             )}
@@ -162,7 +199,7 @@ export default function TableSection({
                   },
                 }}
               >
-                <TableCell colSpan={4} sx={{ p: 0 }}>
+                <TableCell colSpan={COLUMN_COUNT} sx={{ p: 0 }}>
                   <Pagination
                     count={totalCount}
                     page={page}

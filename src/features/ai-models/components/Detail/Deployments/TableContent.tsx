@@ -11,16 +11,10 @@ import ActionButtons from './ActionButtons';
 interface IProps {
   row: EditionDeploymentDeviceRow;
   hasPermission: boolean;
-  onRetry: (deviceId: string) => void;
   onDelete: (row: EditionDeploymentDeviceRow) => void;
 }
 
-export default function TableContent({
-  row,
-  hasPermission,
-  onRetry,
-  onDelete,
-}: IProps) {
+export default function TableContent({ row, hasPermission, onDelete }: IProps) {
   const { tenant } = useParams<'tenant'>();
 
   if (!tenant) {
@@ -59,7 +53,6 @@ export default function TableContent({
         <ActionButtons
           row={row}
           hasPermission={hasPermission}
-          onRetry={(r) => onRetry(r.deviceId)}
           onDelete={onDelete}
         />
       </TableCell>

@@ -8,8 +8,12 @@ export {
   DEPLOYMENT_ACTION_ICON_MAP,
   DEPLOYMENT_ACTION_LABEL_MAP,
 } from './components/deploymentActionDisplay';
-export { deploymentStatusChipProps } from './components/deploymentStatusChip';
+export {
+  containerStateChipProps,
+  stackDeploymentStatusChipProps,
+} from './components/deploymentStatusChip';
 export { default as StackInformation } from './components/Detail/Information/Index';
+export { default as RedeployStackDialog } from './components/RedeployStackDialog';
 export { statusOptions } from './components/stackStatusCards';
 export { typeOptions } from './components/stackTypeOptions';
 export {
@@ -22,11 +26,21 @@ export type {
   Action,
   ContainerStackTableRow,
   DeploymentAction,
+  StackDeploymentStatus,
   StackVersionItem,
   Status,
   TableHeaderSortKey,
 } from './domain/types';
-export { DEFAULT_STACK_TYPE } from './domain/types';
+export {
+  countStackStatusCards,
+  DEFAULT_STACK_TYPE,
+  getStackStatusCard,
+} from './domain/types';
+export {
+  type RedeployTarget,
+  useRedeployConfirm,
+} from './hooks/useRedeployConfirm';
+export { useStackCommand } from './hooks/useStackCommand';
 export { default as AddContainerStackPage } from './pages/AddContainerStackPage';
 export { default as ContainerStackDetailPage } from './pages/ContainerStackDetailPage';
 export { default as ContainerStackListPage } from './pages/ContainerStackListPage';

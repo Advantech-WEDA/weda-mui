@@ -7,7 +7,12 @@ export type Tone =
   | 'secondary'
   | 'neutral';
 
-export type ToneAppearance = 'filled' | 'outlined' | 'plain' | 'soft';
+export type ToneAppearance =
+  | 'filled'
+  | 'outlined'
+  | 'plain'
+  | 'soft'
+  | 'tinted';
 
 export interface ToneStyle {
   color: string;
@@ -16,6 +21,9 @@ export interface ToneStyle {
 }
 
 const SURFACE = 'var(--_components-paper-elevation-0, #FFF)';
+
+const OUTLINE_BORDER =
+  'var(--_components-paper-outlineBorder, rgba(0, 0, 0, 0.12))';
 
 const NEUTRAL_BORDER = 'var(--_components-chip-defaultEnabledBorder, #BDBDBD)';
 
@@ -109,6 +117,13 @@ export function resolveTone(
         color: tokens.main,
         backgroundColor: tokens.soft,
         borderColor: tokens.outlinedBorder ?? tokens.main,
+      };
+
+    case 'tinted':
+      return {
+        color: tokens.main,
+        backgroundColor: tokens.filledBackground ?? tokens.soft,
+        borderColor: OUTLINE_BORDER,
       };
   }
 }

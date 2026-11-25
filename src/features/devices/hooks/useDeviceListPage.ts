@@ -89,9 +89,8 @@ export function useDeviceListPage() {
   const loading = useDeviceStore((s) => s.loading);
   const deviceItems = useDeviceStore((s) => s.deviceItems);
   const deviceLatestMap = useDeviceStore((s) => s.deviceLatestMap);
-  const totalCount = useDeviceStore((s) => s.totalCount);
 
-  const GET_DEVICES = useDeviceStore((s) => s.GET_DEVICES);
+  const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
   const POST_DEVICE_STATUS = useDeviceStore((s) => s.POST_DEVICE_STATUS);
   const DELETE_DEVICES = useDeviceStore((s) => s.DELETE_DEVICES);
   const GET_DEVICES_LATEST_DATA_BATCH = useDeviceStore(
@@ -108,9 +107,19 @@ export function useDeviceListPage() {
     [deviceItems, searchWord, statusFilter]
   );
 
+  const lastPage = Math.max(
+    0,
+    Math.ceil(filteredRows.length / rowsPerPage) - 1
+  );
+  const currentPage = Math.min(page, lastPage);
+
   const pagedRows = useMemo(
-    () => filteredRows.slice(0, rowsPerPage),
-    [filteredRows, rowsPerPage]
+    () =>
+      filteredRows.slice(
+        currentPage * rowsPerPage,
+        (currentPage + 1) * rowsPerPage
+      ),
+    [filteredRows, currentPage, rowsPerPage]
   );
 
   const displayRows = useMemo(
@@ -165,11 +174,9 @@ export function useDeviceListPage() {
       }
 
       try {
-        await GET_DEVICES(
+        await GET_ALL_DEVICES(
           {
             orgId: currentOrgId,
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
             sorting: `${sortKey} ${sortOrder}`,
           },
           signal
@@ -185,15 +192,7 @@ export function useDeviceListPage() {
         return false;
       }
     },
-    [
-      currentOrgId,
-      showError,
-      GET_DEVICES,
-      page,
-      rowsPerPage,
-      sortKey,
-      sortOrder,
-    ]
+    [currentOrgId, showError, GET_ALL_DEVICES, sortKey, sortOrder]
   );
 
   useEffect(() => {
@@ -318,6 +317,7 @@ export function useDeviceListPage() {
   const handleClearFilters = () => {
     setSearchWord('');
     setStatusFilter('');
+    setPage(0);
   };
 
   const handleActivationStatus = async () => {
@@ -336,7 +336,9 @@ export function useDeviceListPage() {
     } catch (error) {
       handleCloseDialog();
       showError(
-        error instanceof Error ? error.message : 'Update device status failed'
+        error instanceof Error
+          ? error.message
+          : 'Update registration status failed'
       );
     }
   };
@@ -348,8 +350,8 @@ export function useDeviceListPage() {
       await DELETE_DEVICES({ deviceId: selectedItem.deviceId });
       await fetchGetDevices();
       handleCloseDialog();
+
       showSuccess('Device deleted successfully');
-      setPage(0);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Delete device failed';
@@ -361,14 +363,17 @@ export function useDeviceListPage() {
   const handleStatusCardChange = (value: Status | '') => {
     setStatusFilter(value);
     setSearchWord('');
+    setPage(0);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -383,9 +388,9 @@ export function useDeviceListPage() {
   const handleStatusDialogClose = () => setStatusDialogOpen(false);
 
   const tableSectionProps = {
-    rows: displayRows,
-    totalCount: hasFilter ? filteredRows.length : totalCount,
-    page,
+    rows: loadError ? [] : displayRows,
+    totalCount: loadError ? 0 : filteredRows.length,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
@@ -395,7 +400,10 @@ export function useDeviceListPage() {
     hasPermission,
     hasDeletePermission,
     onSort: handleSort,
-    onRetry: fetchGetDevices,
+
+    onRetry: () => {
+      void fetchGetDevices();
+    },
     onClearAll: handleClearFilters,
     onPageChange: handlePageChange,
     onRowsPerPageChange: handleRowsPerPageChange,
@@ -408,7 +416,7 @@ export function useDeviceListPage() {
   return {
     searchWord,
     statusFilter,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,

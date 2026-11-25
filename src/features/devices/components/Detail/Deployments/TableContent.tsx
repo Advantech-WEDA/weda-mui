@@ -1,14 +1,15 @@
 import {
   type Action,
+  containerStateChipProps,
   DEPLOYMENT_ACTION_ICON_MAP,
   DEPLOYMENT_ACTION_LABEL_MAP,
   type DeploymentAction,
-  deploymentStatusChipProps,
   getDeploymentActions,
   type IDeploymentItem,
   isDeploymentApiAction,
   isRedeployAction,
   isRemoveAction,
+  stackDeploymentStatusChipProps,
 } from '@features/container-stacks';
 import {
   Box,
@@ -46,6 +47,7 @@ export default function TableContent({
 }: IProps) {
   const { tenant } = useParams<'tenant'>();
   const [open, setOpen] = useState(true);
+  const hasContainers = row.containers.length > 0;
 
   if (!tenant) {
     throw new Error('TableContent must be rendered under a /:tenant route');
@@ -74,7 +76,11 @@ export default function TableContent({
       <TableRow hover>
         <TableCell>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton size="small" onClick={() => setOpen((prev) => !prev)}>
+            <IconButton
+              size="small"
+              onClick={() => setOpen((prev) => !prev)}
+              sx={hasContainers ? undefined : { visibility: 'hidden' }}
+            >
               <SvgIcon
                 name={open ? 'ExpandMoreFilled' : 'ChevronRightFilled'}
                 sx={{ color: 'var(--action-active)' }}
@@ -97,8 +103,14 @@ export default function TableContent({
         </TableCell>
 
         <TableCell>
-          {row.status && <AppChip {...deploymentStatusChipProps(row.status)} />}
+          {row.status ? (
+            <AppChip {...stackDeploymentStatusChipProps(row.status)} />
+          ) : (
+            '-'
+          )}
         </TableCell>
+
+        <TableCell>-</TableCell>
 
         <TableCell>
           {row.createdAt ? formatLocalTime(row.createdAt) : '-'}
@@ -118,71 +130,77 @@ export default function TableContent({
         </TableCell>
       </TableRow>
 
-      <TableRow>
-        <TableCell
-          colSpan={4}
-          sx={{
-            p: 0,
-            borderBottom: 0,
-          }}
-        >
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  tableLayout: 'fixed',
-                }}
-              >
-                <colgroup>
-                  <col />
+      {hasContainers && (
+        <TableRow>
+          <TableCell
+            colSpan={5}
+            sx={{
+              p: 0,
+              borderBottom: 0,
+            }}
+          >
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <Box>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    tableLayout: 'fixed',
+                  }}
+                >
+                  <colgroup>
+                    <col />
 
-                  <col style={{ width: 200 }} />
+                    <col style={{ width: 200 }} />
 
-                  <col style={{ width: 200 }} />
+                    <col style={{ width: 200 }} />
 
-                  <col style={{ width: 200 }} />
-                </colgroup>
+                    <col style={{ width: 200 }} />
 
-                <tbody>
-                  {row.containers.map((container) => (
-                    <TableRow
-                      key={container.id}
-                      hover
-                      sx={{
-                        '& td': {
-                          borderBottom: '1px solid var(--divider)',
-                        },
-                      }}
-                    >
-                      <TableCell sx={{ pl: 8 }}>
-                        <Typography variant="body2">
-                          {container.name}
-                        </Typography>
-                      </TableCell>
+                    <col style={{ width: 200 }} />
+                  </colgroup>
 
-                      <TableCell>
-                        {container.state && (
-                          <AppChip
-                            {...deploymentStatusChipProps(
-                              container.state.toLowerCase()
-                            )}
-                          />
-                        )}
-                      </TableCell>
+                  <tbody>
+                    {row.containers.map((container) => (
+                      <TableRow
+                        key={container.id}
+                        hover
+                        sx={{
+                          '& td': {
+                            borderBottom: '1px solid var(--divider)',
+                          },
+                        }}
+                      >
+                        <TableCell sx={{ pl: 8 }}>
+                          <Typography variant="body2">
+                            {container.name}
+                          </Typography>
+                        </TableCell>
 
-                      <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
 
-                      <TableCell>-</TableCell>
-                    </TableRow>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+                        <TableCell>
+                          {container.state ? (
+                            <AppChip
+                              {...containerStateChipProps(container.state)}
+                            />
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+
+                        <TableCell>-</TableCell>
+
+                        <TableCell>-</TableCell>
+                      </TableRow>
+                    ))}
+                  </tbody>
+                </table>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      )}
     </Fragment>
   );
 }

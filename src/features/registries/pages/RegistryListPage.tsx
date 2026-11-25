@@ -1,10 +1,10 @@
 import { Stack, Typography } from '@mui/material';
 import {
+  DeleteConfirmDialog,
   PageActionButton,
   PageListLayout,
   PageSearchField,
   SelectElement,
-  SimpleConfirmDialog,
   SvgIcon,
 } from '@shared/ui';
 
@@ -82,11 +82,12 @@ export default function Registries() {
     >
       <TableSection {...tableSectionProps} />
 
-      <SimpleConfirmDialog
+      <DeleteConfirmDialog
         open={dialogOpen}
         title="Warning: Deleting a registry may cause deployment failures for stacks that reference images from this registry."
         content={`Are you sure you want to delete registry "${selectedItem?.registryName}" (${selectedItem?.registryId})?`}
-        confirmLabel="Delete"
+        confirmName={selectedItem?.registryName ?? ''}
+        nameLabel="registry"
         onClose={handleClose}
         onConfirm={handleConfirmDelete}
       />

@@ -29,6 +29,12 @@
     line-height: 24px;
     letter-spacing: 0.4px;
   }
+  &--refresh.MuiButton-root {
+    min-width: 40px;
+    padding-left: 0;
+    padding-right: 0;
+    color: var(--action-active);
+  }
 }
 
 .page-search-field {

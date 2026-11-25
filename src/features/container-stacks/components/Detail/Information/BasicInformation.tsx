@@ -24,7 +24,7 @@ export default function BasicInformation({
 
   const rows = [
     ['Stack config ID', stackConfigId ?? '-'],
-    ['Latest revision ID', stackRevisionId ?? '-'],
+    ['Revision ID', stackRevisionId ?? '-'],
     ['Type', stackData.type ?? '-'],
     ['Description', stackData.description ?? '-'],
   ];

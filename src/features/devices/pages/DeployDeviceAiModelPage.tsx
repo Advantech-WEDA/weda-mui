@@ -10,12 +10,16 @@ export default function DeployDeviceAiModelPage() {
     handleConfirmCancel,
     handleSubmitConfirmOpen,
     setCancelOpen,
+    handleDeploySetupChange,
+    handleContainerChange,
     ...deployPage
   } = useDeviceDeployAiModelPage();
 
   return (
     <EditorForm
       {...deployPage}
+      onDeploySetupChange={handleDeploySetupChange}
+      onContainerChange={handleContainerChange}
       onSelectModel={handleSelectModel}
       onSelectAll={handleSelectAll}
       onSubmit={handleSubmit}

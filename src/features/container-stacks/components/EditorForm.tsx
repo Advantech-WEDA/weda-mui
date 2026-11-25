@@ -126,8 +126,7 @@ export default function EditorForm({
               <Typography variant="h5">Basic information</Typography>
 
               <Typography variant="body2" color="text.secondary">
-                Creating a stack with an existing name, or editing a stack, will
-                automatically generate a new version.
+                Editing a stack will automatically generate a new version.
               </Typography>
             </Box>
 
@@ -184,7 +183,7 @@ export default function EditorForm({
 
       <ConfirmDialog
         open={cancelOpen}
-        onClose={onCancel}
+        onClose={onConfirmCancel}
         title="Unsaved Changes"
         content="Do you want to leave this page? Any unsaved changes will be lost."
         actions={[

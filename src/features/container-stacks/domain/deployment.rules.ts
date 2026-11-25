@@ -1,26 +1,44 @@
-import type { Action, DeploymentAction } from './types';
+import type { Action, DeploymentAction, StackDeploymentStatus } from './types';
 
-export const getDeploymentActions = (status?: string): DeploymentAction[] => {
-  switch (status?.toLowerCase()) {
-    case 'running':
-      return ['stop', 'pause', 'restart', 'remove'];
+const RUNNING_ACTIONS: DeploymentAction[] = [
+  'stop',
+  'pause',
+  'restart',
+  'remove',
+];
 
-    case 'paused':
-      return ['resume', 'stop', 'restart', 'remove'];
-
-    case 'exited':
-      return ['start', 'restart', 'remove'];
-
-    case 'retry':
-      return ['remove'];
-
-    case 'error':
-      return ['restart', 'redeploy', 'remove'];
-
-    default:
-      return ['remove'];
-  }
+export const STACK_STATUS_ACTION_MAP: Record<
+  StackDeploymentStatus,
+  DeploymentAction[]
+> = {
+  unknown: ['remove'],
+  pending: ['remove'],
+  deploying: ['remove'],
+  awaitingDeployedStatus: ['remove'],
+  running: RUNNING_ACTIONS,
+  deployed: RUNNING_ACTIONS,
+  completed: ['remove'],
+  exited: ['start', 'restart', 'remove'],
+  paused: ['resume', 'stop', 'restart', 'remove'],
+  stopped: ['start', 'restart', 'remove'],
+  removing: [],
+  awaitingRemovedStatus: [],
+  awaitingCleanup: [],
+  retry: ['remove'],
+  error: ['redeploy', 'remove'],
 };
+
+const STACK_STATUS_ACTIONS_BY_LOWER_CASE = new Map<string, DeploymentAction[]>(
+  Object.entries(STACK_STATUS_ACTION_MAP).map(([status, actions]) => [
+    status.toLowerCase(),
+    actions,
+  ])
+);
+
+export const getDeploymentActions = (status?: string): DeploymentAction[] =>
+  STACK_STATUS_ACTIONS_BY_LOWER_CASE.get(status?.toLowerCase() ?? '') ?? [
+    'remove',
+  ];
 
 export const isRemoveAction = (action: DeploymentAction) => action === 'remove';
 

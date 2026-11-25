@@ -24,7 +24,7 @@ export default function SimpleConfirmDialog({
   return (
     <ConfirmDialog
       open={open}
-      onClose={onClose}
+      onClose={loading ? () => undefined : onClose}
       title={title}
       content={content}
       actions={[
@@ -37,7 +37,7 @@ export default function SimpleConfirmDialog({
         },
         {
           label: confirmLabel,
-          onClick: () => void onConfirm(),
+          onClick: onConfirm,
           variant: 'text',
           color: 'primary',
           disabled: loading,

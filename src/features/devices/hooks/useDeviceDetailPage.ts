@@ -39,6 +39,8 @@ const TAB_PATH_TO_VALUE: Record<string, string> = {
   telemetry: 'Telemetry',
   'container-stacks': 'ContainerStacks',
   'ai-models': 'AiModels',
+  'data-streams': 'DataStreams',
+  analyzers: 'Analyzers',
 };
 
 const TAB_VALUE_TO_PATH: Record<string, string> = {
@@ -47,6 +49,8 @@ const TAB_VALUE_TO_PATH: Record<string, string> = {
   Telemetry: 'telemetry',
   ContainerStacks: 'container-stacks',
   AiModels: 'ai-models',
+  DataStreams: 'data-streams',
+  Analyzers: 'analyzers',
 };
 
 export function useDeviceDetailPage() {
@@ -109,8 +113,8 @@ export function useDeviceDetailPage() {
   const GET_DEVICE_CAPABILITIES = useDeviceStore(
     (s) => s.GET_DEVICE_CAPABILITIES
   );
-  const GET_LIST_STACKS_IN_DEVICE = useDeploymentsStore(
-    (s) => s.GET_LIST_STACKS_IN_DEVICE
+  const GET_ALL_STACKS_IN_DEVICE = useDeploymentsStore(
+    (s) => s.GET_ALL_STACKS_IN_DEVICE
   );
   const GET_DEVICE_AI_MODELS = useAIModelsStore((s) => s.GET_DEVICE_AI_MODELS);
   const GET_DEVICE_TELEMETRY_TABLE = useDeviceStore(
@@ -121,7 +125,6 @@ export function useDeviceDetailPage() {
   const deploymentItems = useDeploymentsStore((s) => s.deploymentItems);
   const rawDeploymentLoading = useDeploymentsStore((s) => s.loading);
   const deploymentLoading = !devicesReady || rawDeploymentLoading;
-  const deploymentTotalCount = useDeploymentsStore((s) => s.totalCount);
   const telemetryTableLoading = useDeviceStore((s) => s.telemetryTableLoading);
   const aiModelDeviceDeploymentsList = useAIModelsStore(
     (s) => s.aiModelDeviceDeploymentsList
@@ -130,14 +133,14 @@ export function useDeviceDetailPage() {
 
   const fetchDeployments = useCallback(
     (
-      params: Omit<IGetListStacksInDeviceParams, 'deviceId'>,
+      params: Pick<IGetListStacksInDeviceParams, 'sorting'>,
       signal?: AbortSignal
     ) => {
       if (!deviceId) return Promise.reject(new Error('No Device ID'));
 
-      return GET_LIST_STACKS_IN_DEVICE({ deviceId, ...params }, signal);
+      return GET_ALL_STACKS_IN_DEVICE({ deviceId, ...params }, signal);
     },
-    [deviceId, GET_LIST_STACKS_IN_DEVICE]
+    [deviceId, GET_ALL_STACKS_IN_DEVICE]
   );
 
   const fetchTelemetryTable = useCallback(
@@ -233,21 +236,16 @@ export function useDeviceDetailPage() {
 
     const controller = new AbortController();
 
-    fetchDeployments(
-      {
-        skipCount: 0,
-        maxResultCount: deploymentsRowsPerPage,
-        sorting: 'createdAt asc',
-      },
-      controller.signal
-    ).catch((error) => {
-      if (axios.isCancel(error)) return;
+    fetchDeployments({ sorting: 'createdAt asc' }, controller.signal).catch(
+      (error) => {
+        if (axios.isCancel(error)) return;
 
-      console.error('[GET_LIST_STACKS_IN_DEVICE] failed:', error);
-    });
+        console.error('[GET_LIST_STACKS_IN_DEVICE] failed:', error);
+      }
+    );
 
     return () => controller.abort();
-  }, [deviceId, fetchDeployments, isNodeTabDisabled, deploymentsRowsPerPage]);
+  }, [deviceId, fetchDeployments, isNodeTabDisabled]);
 
   useEffect(() => {
     if (isNodeTabDisabled) return;
@@ -343,7 +341,9 @@ export function useDeviceDetailPage() {
     } catch (error) {
       handleCloseDialog();
       showError(
-        error instanceof Error ? error.message : 'Update device status failed'
+        error instanceof Error
+          ? error.message
+          : 'Update registration status failed'
       );
     }
   };
@@ -380,6 +380,7 @@ export function useDeviceDetailPage() {
     statusDialogContent,
 
     canChangeActivation: canChangeActivation(currentDevice?.status),
+    isTabDisabled,
     isNodeTabDisabled,
     isTelemetryTabDisabled,
     deviceLatestData,
@@ -387,7 +388,6 @@ export function useDeviceDetailPage() {
     latestLoading,
     deploymentItems,
     deploymentLoading,
-    deploymentTotalCount,
     telemetryTableLoading,
     aiModelDeviceDeploymentsList,
     aiModelsLoading,

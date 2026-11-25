@@ -3,6 +3,7 @@ import ContentCopyFilled from '@/assets/icons/ContentCopyFilled.svg?react';
 import PaletteOutlineFilled from '@/assets/icons/PaletteOutlineFilled.svg?react';
 import TokenOutlineFilled from '@/assets/icons/TokenOutlineFilled.svg?react';
 
+import AbcOutlined from './AbcOutlined.svg?react';
 import About from './About.svg?react';
 import AccountCircleFilled from './AccountCircleFilled.svg?react';
 import Add from './Add.svg?react';
@@ -24,10 +25,12 @@ import ChevronRightFilled from './ChevronRightFilled.svg?react';
 import CloseFilled from './CloseFilled.svg?react';
 import DeleteOutlined from './DeleteOutlined.svg?react';
 import DisplaySettingsOutlined from './DisplaySettingsOutlined.svg?react';
+import DnsOutlined from './DnsOutlined.svg?react';
 import EditOutlined from './EditOutlined.svg?react';
 import ExpandMoreFilled from './ExpandMoreFilled.svg?react';
 import FileOpenOutlined from './FileOpenOutlined.svg?react';
 import FileUploadOutlined from './FileUploadOutlined.svg?react';
+import FlakyOutlined from './FlakyOutlined.svg?react';
 import HelpFilled from './HelpFilled.svg?react';
 import HomeFilled from './HomeFilled.svg?react';
 import HomeOutlined from './HomeOutlined.svg?react';
@@ -39,6 +42,8 @@ import LayersOutlined from './LayersOutlined.svg?react';
 import LogoutFilled from './LogoutFilled.svg?react';
 import ManageAccountsOutlined from './ManageAccountsOutlined.svg?react';
 import MoreVertFilled from './MoreVertFilled.svg?react';
+import NumberOutlined from './NumberOutlined.svg?react';
+import OutboundOutlined from './OutboundOutlined.svg?react';
 import PauseCircleOutlined from './PauseCircleOutlined.svg?react';
 import PeopleAltOutlined from './PeopleAltOutlined.svg?react';
 import PersonFilled from './PersonFilled.svg?react';
@@ -49,6 +54,7 @@ import RefreshFilled from './RefreshFilled.svg?react';
 import RestartAltOutlined from './RestartAltOutlined.svg?react';
 import ResumeAltOutlined from './ResumeAltOutlined.svg?react';
 import SearchFilled from './SearchFilled.svg?react';
+import Speed025Outlined from './Speed025Outlined.svg?react';
 import StarOutlineFilled from './StarOutlineFilled.svg?react';
 import StopCircleOutlined from './StopCircleOutlined.svg?react';
 import View from './View.svg?react';
@@ -109,8 +115,14 @@ export const icons = {
   FileUploadOutlined,
   FileOpenOutlined,
   PsychologyOutlined,
-  VisibilityOutlined,
+  OutboundOutlined,
+  DnsOutlined,
   VisibilityOffOutlined,
+  VisibilityOutlined,
+  AbcOutlined,
+  FlakyOutlined,
+  NumberOutlined,
+  Speed025Outlined,
 };
 
 export type IconName = keyof typeof icons;

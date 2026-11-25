@@ -2,6 +2,10 @@ import { Box, IconButton, TextField } from '@mui/material';
 import { SelectElement, SvgIcon } from '@shared/ui';
 
 import type { ICreateStackConfigPayload } from '../api/stacks.api.types';
+import {
+  getStackNameErrorMessage,
+  STACK_NAME_MAX_LENGTH,
+} from '../domain/stackName.rules';
 import type { IStackErrors } from '../domain/types';
 import { typeOptions } from './stackTypeOptions';
 
@@ -14,32 +18,6 @@ interface IProps {
   onStackFileChange: (file: File | null) => void;
 }
 
-const getStackNameErrorMessage = (value: string) => {
-  const stackName = value.trim();
-
-  if (!stackName) {
-    return 'Stack name is required';
-  }
-
-  if (stackName.length > 63) {
-    return 'Stack name must be 63 characters or less';
-  }
-
-  if (!/^[a-z0-9-]+$/.test(stackName)) {
-    return 'Stack name may contain only lowercase letters, digits, and hyphen (-)';
-  }
-
-  if (stackName.startsWith('-') || stackName.endsWith('-')) {
-    return 'Stack name may not start or end with a hyphen (-)';
-  }
-
-  if (stackName.includes('--')) {
-    return 'Stack name cannot contain consecutive hyphens (-)';
-  }
-
-  return '';
-};
-
 export default function BasicInformation({
   stackData,
   stackFile,
@@ -48,17 +26,9 @@ export default function BasicInformation({
   onChange,
   onStackFileChange,
 }: IProps) {
-  const stackNameErrorMessage = getStackNameErrorMessage(stackData.stackName);
-  const hasStackNameError = Boolean(errors.stackName || stackNameErrorMessage);
-
-  const handleStackNameChange = (value: string) => {
-    const nextValue = value
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '')
-      .slice(0, 63);
-
-    onChange('stackName', nextValue);
-  };
+  const stackNameErrorMessage = errors.stackName
+    ? getStackNameErrorMessage(stackData.stackName)
+    : '';
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -68,16 +38,8 @@ export default function BasicInformation({
       return;
     }
 
-    const isValidFile =
-      file.name.endsWith('.yml') || file.name.endsWith('.yaml');
-
-    if (!isValidFile) {
-      onStackFileChange(null);
-      event.target.value = '';
-      return;
-    }
-
     onStackFileChange(file);
+    event.target.value = '';
   };
 
   return (
@@ -93,21 +55,14 @@ export default function BasicInformation({
             </>
           }
           value={stackData.stackName}
-          error={hasStackNameError}
+          error={Boolean(stackNameErrorMessage)}
           disabled={mode === 'edit'}
-          helperText={hasStackNameError ? stackNameErrorMessage : ''}
-          slotProps={{
-            input: {
-              inputProps: {
-                maxLength: 63,
-              },
-            },
-          }}
-          onChange={(e) => handleStackNameChange(e.target.value)}
+          helperText={stackNameErrorMessage}
+          onChange={(e) => onChange('stackName', e.target.value)}
         />
 
         <Box className="editor-page__form-wrapper-helper">
-          {stackData.stackName.trim().length}/63
+          {stackData.stackName.length}/{STACK_NAME_MAX_LENGTH}
         </Box>
       </Box>
 
@@ -137,7 +92,7 @@ export default function BasicInformation({
           slotProps={{
             input: {
               inputProps: {
-                maxLength: 500,
+                maxLength: 1024,
               },
               sx: {
                 padding: '16px 12px',
@@ -148,7 +103,7 @@ export default function BasicInformation({
         />
 
         <Box className="editor-page__form-wrapper-helper">
-          {(stackData.description ?? '').trim().length}/500
+          {(stackData.description ?? '').trim().length}/1024
         </Box>
       </Box>
 

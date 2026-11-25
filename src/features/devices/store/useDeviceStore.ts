@@ -311,7 +311,7 @@ export const useDeviceStore = create<IDeviceState>()((set, get) => ({
 
       const errorMessage = extractErrorMessage(
         error,
-        '[Update device status] Fetch failed'
+        '[Update registration status] Fetch failed'
       );
 
       console.error(errorMessage, error);

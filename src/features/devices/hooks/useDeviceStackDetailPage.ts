@@ -5,7 +5,10 @@ import {
   isDeploymentApiAction,
   isRedeployAction,
   isRemoveAction,
+  type RedeployTarget,
   useDeploymentsStore,
+  useRedeployConfirm,
+  useStackCommand,
 } from '@features/container-stacks';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
 import { useHasManagementPermission } from '@shared/session/useHasManagementPermission';
@@ -46,7 +49,7 @@ export function useDeviceStackDetailPage() {
   const GET_LIST_STACKS_IN_DEVICE = useDeploymentsStore(
     (s) => s.GET_LIST_STACKS_IN_DEVICE
   );
-  const POST_STACK_ACTION = useDeploymentsStore((s) => s.POST_STACK_ACTION);
+  const { runStackCommand } = useStackCommand();
   const POST_DEPLOY_STACK_TO_DEVICES = useDeploymentsStore(
     (s) => s.POST_DEPLOY_STACK_TO_DEVICES
   );
@@ -171,6 +174,41 @@ export function useDeviceStackDetailPage() {
     }
   };
 
+  const redeploy = async ({
+    deviceId,
+    stackConfigId,
+    stackRevisionId,
+  }: RedeployTarget) => {
+    if (!currentOrgId) return;
+
+    try {
+      await POST_DEPLOY_STACK_TO_DEVICES({
+        orgId: currentOrgId,
+        stackConfigId,
+        stackRevisionId,
+        deviceIds: [deviceId],
+      });
+
+      showSuccess('Stack deployed successfully');
+
+      fetchDeploymentStatus();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Stack deploy failed';
+
+      showError(message);
+      console.error('[Stack deploy] failed:', message);
+    }
+  };
+
+  const {
+    redeployTarget,
+    redeployLoading,
+    handleOpenRedeploy,
+    handleCloseRedeploy,
+    handleConfirmRedeploy,
+  } = useRedeployConfirm(redeploy);
+
   const handleDeploymentAction = async (action: DeploymentAction) => {
     if (!hasPermission || !deviceId || !stackConfigId) return;
 
@@ -181,44 +219,21 @@ export function useDeviceStackDetailPage() {
     }
 
     if (isRedeployAction(action)) {
-      if (!currentOrgId || !stackRevisionId) return;
+      if (!stackRevisionId) return;
 
-      try {
-        await POST_DEPLOY_STACK_TO_DEVICES({
-          orgId: currentOrgId,
-          stackConfigId,
-          stackRevisionId,
-          deviceIds: [deviceId],
-        });
-
-        showSuccess('Stack deployed successfully');
-
-        fetchDeploymentStatus();
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Stack deploy failed';
-
-        showError(message);
-        console.error('[Stack deploy] failed:', message);
-      }
+      handleOpenRedeploy(deviceId, stackConfigId, stackRevisionId);
 
       return;
     }
 
     if (isDeploymentApiAction(action)) {
-      try {
-        await POST_STACK_ACTION({ deviceId, stackConfigId, action });
-
-        showSuccess('Stack action performed successfully');
-
-        fetchDeploymentStatus();
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Stack action failed';
-
-        showError(message);
-        console.error('[Stack action] failed:', message);
-      }
+      await runStackCommand(
+        { deviceId, stackConfigId, action },
+        {
+          onStatusConfirmed: setDeploymentStatus,
+          onStatusUnknown: () => fetchDeploymentStatus(),
+        }
+      );
     }
   };
 
@@ -232,5 +247,13 @@ export function useDeviceStackDetailPage() {
     handleDeploymentAction,
     handleCloseDeleteStack,
     handleConfirmDeleteStack,
+
+    redeployDialog: {
+      open: redeployTarget !== null,
+      stackName: stackData.stackName,
+      loading: redeployLoading,
+      onClose: handleCloseRedeploy,
+      onConfirm: handleConfirmRedeploy,
+    },
   };
 }

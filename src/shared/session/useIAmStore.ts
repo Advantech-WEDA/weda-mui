@@ -71,7 +71,8 @@ export const useIAmStore = create<IIamState>()((set, get) => ({
         const { data } = await axiosInstance.post<IUserIAmToken>(
           apiPath('/api/v1/auth/tokens'),
           {},
-          { headers: getExchangeHeaders() }
+
+          { headers: getExchangeHeaders(), skipGlobalLoading: true }
         );
 
         if (!data?.accessToken) {
@@ -117,7 +118,9 @@ export const useIAmStore = create<IIamState>()((set, get) => ({
     try {
       const { data } = await axiosInstance.post<IUserIAmToken>(
         apiPath('/api/v1/auth/tokens?grant_type=refresh_token'),
-        { refreshToken: currentToken.refreshToken }
+        { refreshToken: currentToken.refreshToken },
+
+        { skipGlobalLoading: true }
       );
 
       const iAmUserData = jwtDecode<IUserIAmUserProfile>(data.accessToken);

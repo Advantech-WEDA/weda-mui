@@ -36,21 +36,18 @@ export type RegistryFormErrors = {
   username: string;
 };
 
-export const registryOptions: { label: string; value: RegistryType }[] = [
-  {
-    label: 'Docker Hub',
-    value: 'DockerHub',
-  },
-  {
-    label: 'AWS ECR',
-    value: 'AwsECR',
-  },
-  {
-    label: 'Azure ACR',
-    value: 'AzureACR',
-  },
-  {
-    label: 'Custom',
-    value: 'Custom',
-  },
-];
+export const REGISTRY_TYPE_LABEL: Record<RegistryType, string> = {
+  DockerHub: 'Docker Hub',
+  AwsECR: 'AWS ECR',
+  AzureACR: 'Azure ACR',
+  Custom: 'Custom',
+};
+
+export function getRegistryTypeLabel(type?: string | null): string {
+  if (!type) return '-';
+  return REGISTRY_TYPE_LABEL[type as RegistryType] ?? type;
+}
+
+export const registryOptions: { label: string; value: RegistryType }[] = (
+  ['DockerHub', 'AwsECR', 'AzureACR', 'Custom'] as const
+).map((value) => ({ label: REGISTRY_TYPE_LABEL[value], value }));

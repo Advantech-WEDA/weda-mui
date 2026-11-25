@@ -61,7 +61,9 @@ export default function TableSection({
   const isFilterEmpty = isEmpty && hasFilter;
   const isInitialEmpty = isEmpty && !hasFilter;
 
-  const selectableRows = rows.filter((row) => Boolean(row.deviceId));
+  const selectableRows = rows.filter(
+    (row) => Boolean(row.deviceId) && !disabledDeviceIds.includes(row.deviceId)
+  );
 
   const isAllSelected =
     selectableRows.length > 0 &&
@@ -105,13 +107,13 @@ export default function TableSection({
               />
 
               <SortTableHeader
-                label="Model"
+                label="Device model"
                 active={sortKey === 'hwModel'}
                 order={sortOrder}
                 onClick={() => onSort('hwModel')}
               />
 
-              <TableCell sx={{ width: 200 }}>Device status</TableCell>
+              <TableCell sx={{ width: 200 }}>Registration status</TableCell>
               <TableCell sx={{ width: 200 }}>Connectivity</TableCell>
               <TableCell sx={{ width: 200 }}>Last connected</TableCell>
             </TableRow>

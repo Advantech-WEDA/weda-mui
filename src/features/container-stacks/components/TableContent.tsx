@@ -29,7 +29,7 @@ import {
   DEPLOYMENT_ACTION_ICON_MAP,
   DEPLOYMENT_ACTION_LABEL_MAP,
 } from './deploymentActionDisplay';
-import { containerStatusChipProps } from './deploymentStatusChip';
+import { stackDeploymentStatusChipProps } from './deploymentStatusChip';
 
 interface IProps {
   row: StackWithDeployments;
@@ -61,6 +61,7 @@ export default function TableContent({
   const [selectedDeploymentId, setSelectedDeploymentId] = useState<string>('');
 
   const moreMenuOpen = Boolean(moreAnchorEl);
+  const hasDeployments = row.deployments.length > 0;
   const { tenant } = useParams<'tenant'>();
 
   if (!tenant) {
@@ -130,12 +131,34 @@ export default function TableContent({
       <PageTableRow hover>
         <TableCell sx={{ px: 2, py: 1, height: '56px' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton size="small" onClick={() => setOpen((prev) => !prev)}>
-              <SvgIcon
-                name={open ? 'ExpandMoreFilled' : 'ChevronRightFilled'}
-                sx={{ color: 'var(--action-active)' }}
-              />
-            </IconButton>
+            <Tooltip
+              title={
+                hasDeployments
+                  ? ''
+                  : 'This stack revision has not been deployed to any device.'
+              }
+            >
+              <span style={{ display: 'inline-flex' }}>
+                <IconButton
+                  size="small"
+                  disabled={!hasDeployments}
+                  onClick={() => setOpen((prev) => !prev)}
+                >
+                  <SvgIcon
+                    name={
+                      hasDeployments && open
+                        ? 'ExpandMoreFilled'
+                        : 'ChevronRightFilled'
+                    }
+                    sx={{
+                      color: hasDeployments
+                        ? 'var(--action-active)'
+                        : 'var(--action-disabled)',
+                    }}
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
 
             <PageTableInfoCell
               primary={
@@ -153,7 +176,8 @@ export default function TableContent({
         </TableCell>
 
         <TableCell sx={{ px: 2, py: 1 }}>{row.type}</TableCell>
-        <TableCell sx={{ px: 2, py: 1 }}>-</TableCell>
+
+        <TableCell sx={{ px: 2, py: 1 }} />
 
         <TableCell sx={{ px: 2, py: 1 }}>
           {row.createdAt ? formatLocalTime(row.createdAt) : '-'}
@@ -188,7 +212,7 @@ export default function TableContent({
         </TableCell>
       </PageTableRow>
 
-      {row.deployments.length > 0 && (
+      {hasDeployments && (
         <TableRow>
           <TableCell colSpan={5} sx={{ p: 0, borderBottom: 0 }}>
             <Collapse in={open} timeout="auto" unmountOnExit>
@@ -216,18 +240,16 @@ export default function TableContent({
                     const isCurrentMenu =
                       selectedDeploymentId === deployment.deploymentId;
 
+                    const errorReason =
+                      deployment.status?.toLowerCase() === 'error'
+                        ? (deployment.reason?.trim() ?? '')
+                        : '';
+
                     return (
                       <PageTableRow key={deployment.deploymentId} hover>
                         <TableCell sx={{ pl: 8, py: 1, height: '56px' }}>
                           <PageTableInfoCell
-                            primary={
-                              <Box
-                                component="span"
-                                sx={{ color: 'var(--primary-main, #1976D2)' }}
-                              >
-                                {deployment.deviceName ?? '-'}
-                              </Box>
-                            }
+                            primary={deployment.deviceName ?? '-'}
                             secondary={deployment.deviceId ?? '-'}
                           />
                         </TableCell>
@@ -236,9 +258,25 @@ export default function TableContent({
 
                         <TableCell sx={{ px: 2, py: 1 }}>
                           {deployment.status ? (
-                            <AppChip
-                              {...containerStatusChipProps(deployment.status)}
-                            />
+                            <Tooltip
+                              title={errorReason}
+                              slotProps={{
+                                tooltip: {
+                                  sx: {
+                                    whiteSpace: 'pre-line',
+                                    overflowWrap: 'anywhere',
+                                  },
+                                },
+                              }}
+                            >
+                              <span style={{ display: 'inline-flex' }}>
+                                <AppChip
+                                  {...stackDeploymentStatusChipProps(
+                                    deployment.status
+                                  )}
+                                />
+                              </span>
+                            </Tooltip>
                           ) : (
                             '-'
                           )}

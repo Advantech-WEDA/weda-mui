@@ -1,5 +1,6 @@
 import { useDeviceStore } from '@features/devices';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { useNotification } from '@shared/ui';
@@ -71,9 +72,6 @@ export function useEditionDeploymentsTab() {
     (s) => s.GET_AI_MODEL_EDITION_DEPLOYMENTS
   );
   const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
-  const POST_AI_MODEL_DEPLOYMENT = useAIModelsStore(
-    (s) => s.POST_AI_MODEL_DEPLOYMENT
-  );
   const DELETE_AI_MODEL_FROM_DEVICE = useAIModelsStore(
     (s) => s.DELETE_AI_MODEL_FROM_DEVICE
   );
@@ -152,6 +150,15 @@ export function useEditionDeploymentsTab() {
       controller.abort();
     };
   }, [fetchDeployments]);
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount: aiModelEditionDeploymentsList?.totalCount ?? 0,
+    itemCount: editionDeploymentItems.length,
+    loading: loading || isEditionMismatch,
+  });
 
   const rows = useMemo<EditionDeploymentDeviceRow[]>(() => {
     if (editionDeploymentItems.length === 0) return [];
@@ -290,29 +297,6 @@ export function useEditionDeploymentsTab() {
     }
   };
 
-  const handleRetry = async (deviceId: string) => {
-    if (!hasPermission || !currentOrgId || !modelId || !decodedEdition) return;
-
-    try {
-      await POST_AI_MODEL_DEPLOYMENT({
-        orgId: currentOrgId,
-        modelId,
-        edition: decodedEdition,
-        targets: [{ deviceIdList: [deviceId] }],
-      });
-
-      showSuccess('Deployment retried successfully');
-
-      fetchDeployments();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Retry deployment failed';
-
-      showError(message);
-      console.error('[Retry deployment] failed:', message);
-    }
-  };
-
   return {
     hasPermission,
     lastUpdated,
@@ -323,7 +307,8 @@ export function useEditionDeploymentsTab() {
     page,
     rowsPerPage,
     visibleTotalCount,
-    tableLoading: (loading && !hasFetchedOnce) || isEditionMismatch,
+    tableLoading:
+      (loading && !hasFetchedOnce) || isEditionMismatch || isResolvingPage,
     hasFilter,
     deleteOpen,
     selectedDeviceName: selectedDevice?.deviceName,
@@ -340,6 +325,5 @@ export function useEditionDeploymentsTab() {
     handleClose,
     handleOpenDelete,
     handleConfirmDelete,
-    handleRetry,
   };
 }

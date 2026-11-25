@@ -3,6 +3,7 @@ import axios from 'axios';
 interface IProblemDetailsValidationItem {
   fieldName?: string | null;
   detail?: string | null;
+  extension?: { FieldName?: string | null } | null;
 }
 
 interface IProblemDetailsErrorData {
@@ -11,6 +12,8 @@ interface IProblemDetailsErrorData {
   title?: string;
 
   validationItems?: IProblemDetailsValidationItem[] | null;
+
+  extension?: Record<string, unknown> | null;
 }
 
 interface IAbpErrorResponseData {
@@ -22,6 +25,61 @@ interface IAbpErrorResponseData {
 }
 
 const FORBIDDEN_FALLBACK_MESSAGE = 'This action is not allowed right now.';
+
+export function extractFieldErrors(error: unknown): Record<string, string> {
+  if (!axios.isAxiosError(error)) return {};
+
+  const problemDetails = error.response?.data as
+    | IProblemDetailsErrorData
+    | undefined;
+  if (!problemDetails || typeof problemDetails !== 'object') return {};
+
+  const fieldErrors: Record<string, string> = {};
+  const fallbackDetail = problemDetails.detail || problemDetails.title || '';
+
+  for (const item of problemDetails.validationItems ?? []) {
+    const fieldName = item?.extension?.FieldName || item?.fieldName;
+    if (fieldName) fieldErrors[fieldName] = item.detail || fallbackDetail;
+  }
+
+  const { extension } = problemDetails;
+  if (extension && typeof extension === 'object') {
+    for (const fieldName of Object.keys(extension)) {
+      fieldErrors[fieldName] ??= fallbackDetail;
+    }
+  }
+
+  return fieldErrors;
+}
+
+export function extractErrorCode(error: unknown): string | undefined {
+  if (!axios.isAxiosError(error)) return undefined;
+
+  const problemDetails = error.response?.data as
+    | IProblemDetailsErrorData
+    | undefined;
+  if (!problemDetails || typeof problemDetails !== 'object') return undefined;
+
+  return problemDetails.title || undefined;
+}
+
+export function extractBackendMessage(error: unknown): string | undefined {
+  if (!axios.isAxiosError(error)) return undefined;
+
+  const problemDetails = error.response?.data as
+    | IProblemDetailsErrorData
+    | undefined;
+  const abpError = (error.response?.data as IAbpErrorResponseData | undefined)
+    ?.error;
+
+  return (
+    problemDetails?.detail ||
+    problemDetails?.message ||
+    problemDetails?.title ||
+    abpError?.message ||
+    undefined
+  );
+}
 
 export function extractErrorMessage(
   error: unknown,

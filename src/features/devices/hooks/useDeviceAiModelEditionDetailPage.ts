@@ -1,9 +1,7 @@
 import {
-  getDeploymentStatusGroup,
   type IAiModelDeviceDeploymentItem,
   type IAiModelEditionDetail,
   type IAiModelItem,
-  isDeployAgainSelectable,
   useAIModelsStore,
 } from '@features/ai-models';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
@@ -32,24 +30,15 @@ export function useDeviceAiModelEditionDetailPage() {
   const [editionDetail, setEditionDetail] =
     useState<IAiModelEditionDetail | null>(null);
 
-  const [redeployOpen, setRedeployOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
   const canDelete = inputValue.trim() === (modelItem?.modelName ?? '').trim();
 
-  const canRedeploy = !!(
-    deploymentItem?.state &&
-    isDeployAgainSelectable(getDeploymentStatusGroup(deploymentItem.state))
-  );
-
   const GET_ALL_AI_MODELS = useAIModelsStore((s) => s.GET_ALL_AI_MODELS);
   const GET_AI_MODEL_EDITION = useAIModelsStore((s) => s.GET_AI_MODEL_EDITION);
   const GET_ALL_DEVICE_AI_MODELS = useAIModelsStore(
     (s) => s.GET_ALL_DEVICE_AI_MODELS
-  );
-  const POST_AI_MODEL_DEPLOYMENT = useAIModelsStore(
-    (s) => s.POST_AI_MODEL_DEPLOYMENT
   );
   const DELETE_AI_MODEL_FROM_DEVICE = useAIModelsStore(
     (s) => s.DELETE_AI_MODEL_FROM_DEVICE
@@ -136,41 +125,6 @@ export function useDeviceAiModelEditionDetailPage() {
     };
   }, [fetchDetail]);
 
-  const handleRedeployConfirmOpen = () => setRedeployOpen(true);
-  const handleCloseRedeployDialog = () => setRedeployOpen(false);
-
-  const handleConfirmRedeploy = async () => {
-    if (
-      !hasPermission ||
-      !currentOrgId ||
-      !deviceId ||
-      !deploymentItem?.modelId ||
-      !deploymentItem.edition
-    )
-      return;
-
-    try {
-      await POST_AI_MODEL_DEPLOYMENT({
-        orgId: currentOrgId,
-        modelId: deploymentItem.modelId,
-        edition: deploymentItem.edition,
-        targets: [{ deviceIdList: [deviceId] }],
-      });
-
-      showSuccess('Deployment retried successfully');
-
-      fetchDetail();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Retry deployment failed';
-
-      showError(message);
-      console.error('[Redeploy AI model] failed:', message);
-    } finally {
-      handleCloseRedeployDialog();
-    }
-  };
-
   const handleDeleteConfirmOpen = () => setDeleteOpen(true);
 
   const handleCloseDeleteDialog = () => {
@@ -217,16 +171,11 @@ export function useDeviceAiModelEditionDetailPage() {
     hasPermission,
     modelItem,
     editionDetail,
-    redeployOpen,
     deleteOpen,
     inputValue,
     setInputValue,
     canDelete,
-    canRedeploy,
     handleBack,
-    handleRedeployConfirmOpen,
-    handleCloseRedeployDialog,
-    handleConfirmRedeploy,
     handleDeleteConfirmOpen,
     handleCloseDeleteDialog,
     handleConfirmDelete,

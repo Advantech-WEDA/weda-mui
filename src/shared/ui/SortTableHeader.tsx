@@ -12,6 +12,7 @@ interface IProps {
   label: string;
   width?: string;
   minWidth?: string;
+  size?: number;
   active: boolean;
   order: SortOrder;
   onClick: () => void;
@@ -22,6 +23,7 @@ const SortTableHeader = ({
   label,
   width,
   minWidth,
+  size = 24,
   active,
   order,
   onClick,
@@ -48,11 +50,13 @@ const SortTableHeader = ({
             <SvgIcon
               name="ArrowUpwardFilled"
               sx={{ color: 'var(--action-active)' }}
+              size={size}
             />
           ) : (
             <SvgIcon
               name="ArrowDownwardFilled"
               sx={{ color: 'var(--action-active)' }}
+              size={size}
             />
           )
         ) : null}

@@ -13,7 +13,8 @@ interface IProps {
   title: string;
   description?: string;
   actionLabel?: string;
-  onAction?: () => void;
+
+  onAction?: (event: React.MouseEvent<HTMLElement>) => void;
   showAction?: boolean;
 }
 

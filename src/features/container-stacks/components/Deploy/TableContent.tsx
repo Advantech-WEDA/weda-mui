@@ -17,6 +17,7 @@ import { AppChip } from '@shared/ui';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
 import type { DeployDeviceRow } from '../../api/stacks.api.types';
+import { stackDeploymentStatusChipProps } from '../deploymentStatusChip';
 
 interface IProps {
   row: DeployDeviceRow;
@@ -38,6 +39,12 @@ export default function TableContent({
   if (!tenant) {
     throw new Error('TableContent must be rendered under a /:tenant route');
   }
+
+  const deployedStatusChip = stackDeploymentStatusChipProps(
+    row.deploymentStatus ?? undefined
+  );
+  const deployedStatusLabel =
+    deployedStatusChip.label ?? deployedStatusChip.config?.label;
 
   const disabled = disabledDeviceIds.includes(row.deviceId);
   const isDeploymentStatusPending =
@@ -127,9 +134,8 @@ export default function TableContent({
       <TableCell sx={{ padding: 'var(--padding--1) var(--padding--2)' }}>
         <AppChip {...deviceStatusChipProps(row.status)} />
         {'  '}
-        {row.status === 'Activated' && row.deploymentStatus === 'deploying'
-          ? '(Deploying)'
-          : ''}
+
+        {deployedStatusLabel ? `(${deployedStatusLabel})` : ''}
       </TableCell>
 
       <TableCell sx={{ padding: 'var(--padding--1) var(--padding--2)' }}>

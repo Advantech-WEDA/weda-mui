@@ -58,11 +58,11 @@ export default function Information({
           value: displayDeviceData?.deviceId || deviceId || '-',
         },
         {
-          label: 'Model',
+          label: 'Device model',
           value: displayDeviceData?.hwModel || '-',
         },
         {
-          label: 'Device Status',
+          label: 'Registration status',
           value: displayDeviceData?.status ? (
             <AppChip {...deviceStatusChipProps(displayDeviceData.status)} />
           ) : (
@@ -80,11 +80,11 @@ export default function Information({
           ),
         },
         {
-          label: 'Last Connected',
+          label: 'Last connected',
           value: formatLocalTime(displayDeviceData?.lastSeen) || '-',
         },
         {
-          label: 'Registration Time',
+          label: 'Registration time',
           value: formatLocalTime(displayDeviceData?.createdAt) || '-',
         },
       ],

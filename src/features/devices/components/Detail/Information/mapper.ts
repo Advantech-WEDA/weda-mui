@@ -1,30 +1,30 @@
 import type { InformationRows, InformationSectionData } from './types';
 
-const UPPERCASE_WORDS = ['cpu', 'ram'];
+const UPPERCASE_WORDS = ['cpu', 'ram', 'id'];
 
 const LABEL_OVERRIDES: Record<string, string> = {
   numofcores: 'Number of Cores',
 };
 
-export const formatLabel = (value: string) => {
+export const formatLabel = (value: string, sentenceCase = false) => {
   const normalizedKey = value.replace(/[_\s]/g, '').toLowerCase();
 
-  if (LABEL_OVERRIDES[normalizedKey]) {
-    return LABEL_OVERRIDES[normalizedKey];
-  }
-
-  const words = value
+  const words = (LABEL_OVERRIDES[normalizedKey] ?? value)
     .replace(/_/g, ' ')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .split(' ')
     .filter(Boolean);
 
   return words
-    .map((word) =>
-      UPPERCASE_WORDS.includes(word.toLowerCase())
-        ? word.toUpperCase()
-        : word.charAt(0).toUpperCase() + word.slice(1)
-    )
+    .map((word, index) => {
+      if (UPPERCASE_WORDS.includes(word.toLowerCase())) {
+        return word.toUpperCase();
+      }
+      if (sentenceCase && index > 0) {
+        return word.toLowerCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
     .join(' ');
 };
 
@@ -49,7 +49,7 @@ const isPrimitive = (value: unknown) => {
 
 const toRows = (value: Record<string, unknown>): InformationRows[] => {
   return Object.entries(value).map(([key, item]) => ({
-    label: formatLabel(key),
+    label: formatLabel(key, true),
     value: formatValue(item),
   }));
 };

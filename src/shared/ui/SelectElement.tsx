@@ -5,11 +5,11 @@ import {
   MenuItem,
   Select,
   type SelectChangeEvent,
-  Stack,
   Typography,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 
 export interface SelectOption {
   label: string;
@@ -23,7 +23,7 @@ export interface IProps<T extends string = string> {
   onChange: (value: string | T | '') => void;
   minWidth?: number | string;
   placeholder?: string;
-  label?: string;
+  label?: ReactNode;
   helperText?: string;
   error?: boolean;
   disabled?: boolean;
@@ -84,81 +84,25 @@ const SelectElement = <T extends string = string>({
         width,
       }}
     >
-      {label ? <InputLabel id={labelId}>{label}</InputLabel> : null}
+      {label ? (
+        <InputLabel id={labelId} shrink>
+          {label}
+        </InputLabel>
+      ) : null}
 
-      <Stack
-        direction="row"
-        alignItems="flex-end"
-        spacing={0.5}
-        className="select__stack"
-      >
-        <Select
-          id={id}
-          name={name}
-          labelId={labelId}
-          value={normalizedValue}
-          label={label}
-          displayEmpty
-          onChange={handleChange}
-          fullWidth={fullWidth}
-          disabled={disabled || loading}
-          renderValue={(selected) => {
-            if (!selected) {
-              return (
-                <Typography
-                  component="span"
-                  sx={{
-                    color: 'text.disabled',
-                  }}
-                >
-                  {placeholder}
-                </Typography>
-              );
-            }
-
+      <Select
+        id={id}
+        name={name}
+        labelId={labelId}
+        value={normalizedValue}
+        label={label}
+        displayEmpty
+        onChange={handleChange}
+        fullWidth={fullWidth}
+        disabled={disabled || loading}
+        renderValue={(selected) => {
+          if (!selected) {
             return (
-              <Typography
-                component="span"
-                sx={{
-                  color: 'text.primary',
-                }}
-              >
-                {selectedOption?.label ?? selected}
-              </Typography>
-            );
-          }}
-          MenuProps={{
-            disableAutoFocusItem: true,
-            PaperProps: {
-              sx: {
-                elevation: 8,
-              },
-            },
-            MenuListProps: {
-              autoFocusItem: false,
-            },
-            slotProps: {
-              paper: {
-                onMouseDown: (e: { preventDefault: () => void }) => {
-                  e.preventDefault();
-                },
-              },
-            },
-          }}
-          sx={[
-            {
-              height,
-              flex: 1,
-              '& .MuiSelect-select': {
-                py: 1,
-                px: 1.5,
-              },
-            },
-            ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-          ]}
-        >
-          {!required && (
-            <MenuItem value="">
               <Typography
                 component="span"
                 sx={{
@@ -167,28 +111,80 @@ const SelectElement = <T extends string = string>({
               >
                 {placeholder}
               </Typography>
-            </MenuItem>
-          )}
+            );
+          }
 
-          {options.map((option) => (
-            <MenuItem
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
+          return (
+            <Typography
+              component="span"
               sx={{
-                '&.Mui-selected': {
-                  color: 'primary.main',
-                },
-                '&.Mui-selected:hover': {
-                  backgroundColor: 'var(--action-hover)',
-                },
+                color: 'text.primary',
               }}
             >
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </Stack>
+              {selectedOption?.label ?? selected}
+            </Typography>
+          );
+        }}
+        MenuProps={{
+          disableAutoFocusItem: true,
+          PaperProps: {
+            sx: {
+              elevation: 8,
+            },
+          },
+          MenuListProps: {
+            autoFocusItem: false,
+          },
+          slotProps: {
+            paper: {
+              onMouseDown: (e: { preventDefault: () => void }) => {
+                e.preventDefault();
+              },
+            },
+          },
+        }}
+        sx={[
+          {
+            height,
+            '& .MuiSelect-select': {
+              py: 1,
+              px: 1.5,
+            },
+          },
+          ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+        ]}
+      >
+        {!required && (
+          <MenuItem value="">
+            <Typography
+              component="span"
+              sx={{
+                color: 'text.disabled',
+              }}
+            >
+              {placeholder}
+            </Typography>
+          </MenuItem>
+        )}
+
+        {options.map((option) => (
+          <MenuItem
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+            sx={{
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+              '&.Mui-selected:hover': {
+                backgroundColor: 'var(--action-hover)',
+              },
+            }}
+          >
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
 
       {helperText ? <FormHelperText>{helperText}</FormHelperText> : null}
     </FormControl>

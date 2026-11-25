@@ -16,7 +16,12 @@ const SignOutDialog = ({ open, loading, onClose, onConfirm }: IProps) => (
       title="Sign out"
       content="Are you sure you want to sign out from WISE Portal?"
       actions={[
-        { label: 'Cancel', onClick: onClose, disabled: loading },
+        {
+          label: 'Cancel',
+          onClick: onClose,
+          disabled: loading,
+          isCancel: true,
+        },
         {
           label: loading ? 'Signing out...' : 'Sign out',
           onClick: onConfirm,

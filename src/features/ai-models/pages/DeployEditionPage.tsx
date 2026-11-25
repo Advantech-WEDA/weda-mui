@@ -10,12 +10,16 @@ export default function DeployEditionPage() {
     handleConfirmCancel,
     handleOpenCancelDialog,
     handleSubmitConfirmOpen,
+    handleDeploySetupChange,
+    handleContainerChange,
     ...deployPage
   } = useDeployEditionPage();
 
   return (
     <EditorForm
       {...deployPage}
+      onDeploySetupChange={handleDeploySetupChange}
+      onContainerChange={handleContainerChange}
       onSelectDevice={handleSelectDevice}
       onSelectAll={handleSelectAll}
       onSubmit={handleSubmit}

@@ -8,7 +8,6 @@ import {
   PageSearchField,
   RevokeDialog,
   SelectElement,
-  SimpleConfirmDialog,
   StatusCard,
   SvgIcon,
 } from '@shared/ui';
@@ -32,9 +31,7 @@ export interface AiModelsViewProps {
   hasFilter: boolean;
   visibleTotalCount: number;
   deleteOpen: boolean;
-  retryOpen: boolean;
   selectedRow: DeviceAiModelRow | null;
-  selectedRetryRow: DeviceAiModelRow | null;
   inputValue: string;
   canDelete: boolean;
   setPage: (page: number) => void;
@@ -48,9 +45,6 @@ export interface AiModelsViewProps {
   handleClose: () => void;
   handleOpenDelete: (row: DeviceAiModelRow) => void;
   handleConfirmDelete: () => void | Promise<void>;
-  handleOpenRetry: (row: DeviceAiModelRow) => void;
-  handleCloseRetry: () => void;
-  handleConfirmRetry: () => void | Promise<void>;
 }
 
 export default function AiModelsView({
@@ -66,9 +60,7 @@ export default function AiModelsView({
   hasFilter,
   visibleTotalCount,
   deleteOpen,
-  retryOpen,
   selectedRow,
-  selectedRetryRow,
   inputValue,
   canDelete,
   setPage,
@@ -82,9 +74,6 @@ export default function AiModelsView({
   handleClose,
   handleOpenDelete,
   handleConfirmDelete,
-  handleOpenRetry,
-  handleCloseRetry,
-  handleConfirmRetry,
 }: AiModelsViewProps) {
   return (
     <Box component="article">
@@ -210,17 +199,7 @@ export default function AiModelsView({
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          onRetry={handleOpenRetry}
           onDelete={handleOpenDelete}
-        />
-
-        <SimpleConfirmDialog
-          open={retryOpen}
-          title="Redeploy AI Model"
-          content={`Are you sure you want to redeploy "${selectedRetryRow?.modelName} (${selectedRetryRow?.edition})"?`}
-          confirmLabel="Redeploy"
-          onClose={handleCloseRetry}
-          onConfirm={handleConfirmRetry}
         />
 
         <RevokeDialog

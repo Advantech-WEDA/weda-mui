@@ -26,7 +26,6 @@ interface IProps {
   onClearAll: () => void;
   onPageChange: (e: unknown, newPage: number) => void;
   onRowsPerPageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRetry: (deviceId: string) => void;
   onDelete: (row: EditionDeploymentDeviceRow) => void;
 }
 
@@ -41,7 +40,6 @@ export default function TableSection({
   onClearAll,
   onPageChange,
   onRowsPerPageChange,
-  onRetry,
   onDelete,
 }: IProps) {
   const isEmpty = !loading && rows.length === 0;
@@ -117,7 +115,6 @@ export default function TableSection({
                   key={row.id}
                   row={row}
                   hasPermission={hasPermission}
-                  onRetry={onRetry}
                   onDelete={onDelete}
                 />
               ))

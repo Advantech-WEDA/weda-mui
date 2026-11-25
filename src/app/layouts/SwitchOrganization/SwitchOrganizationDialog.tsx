@@ -11,25 +11,23 @@ import {
 } from '@mui/material';
 import { SimpleTreeView } from '@mui/x-tree-view';
 import { TreeItem } from '@mui/x-tree-view/TreeItem';
-import {
-  flattenTree,
-  resolveNextPath,
-} from '@shared/session/switchOrganizationUtils';
+import { getAppBasePath } from '@shared/lib/appRoute';
+import { flattenTree } from '@shared/session/switchOrganizationUtils';
 import { useIAmStore } from '@shared/session/useIAmStore';
 import {
   type IUserOrgItem,
   useOrgContentStore,
 } from '@shared/session/useOrgContentStore';
-import { SvgIcon } from '@shared/ui';
+import { SimpleConfirmDialog, SvgIcon, useNotification } from '@shared/ui';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const ORG_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type OrgLabelProps = {
   node: IUserOrgItem;
-  currentOrgName?: string | null;
+  currentOrgId?: string | null;
 };
 
 type SwitchOrganizationDialogProps = {
@@ -37,14 +35,14 @@ type SwitchOrganizationDialogProps = {
   onClose: () => void;
 };
 
-function OrgLabel({ node, currentOrgName }: OrgLabelProps) {
-  const isCurrentName = currentOrgName ? node.name === currentOrgName : false;
+function OrgLabel({ node, currentOrgId }: OrgLabelProps) {
+  const isCurrent = !!currentOrgId && node.orgId === currentOrgId;
 
   return (
     <Box className="org-label">
       <Box className="org-label-left">
         <Typography variant="subtitle2" color="textPrimary" noWrap>
-          {node.name} {isCurrentName ? <span>(Current)</span> : null}
+          {node.name} {isCurrent ? <span>(Current)</span> : null}
         </Typography>
 
         <Typography variant="body2" color="textSecondary" noWrap>
@@ -59,7 +57,7 @@ function renderTree(
   nodes: IUserOrgItem[] | null,
   selected: string | null,
   depth: number,
-  currentOrgName?: string | null
+  currentOrgId?: string | null
 ): React.ReactNode {
   if (!nodes) return null;
 
@@ -67,11 +65,14 @@ function renderTree(
     <TreeItem
       key={node.orgId}
       itemId={node.orgId}
-      className={`tree-depth-${depth}`}
-      label={<OrgLabel node={node} currentOrgName={currentOrgName} />}
+      className={`tree-depth-${depth} ${
+        node.orgId === currentOrgId ? 'is-current' : ''
+      }`}
+      aria-disabled={node.orgId === currentOrgId}
+      label={<OrgLabel node={node} currentOrgId={currentOrgId} />}
     >
       {node.children &&
-        renderTree(node.children, selected, depth + 1, currentOrgName)}
+        renderTree(node.children, selected, depth + 1, currentOrgId)}
     </TreeItem>
   ));
 }
@@ -81,15 +82,16 @@ const SwitchOrganizationDialog: React.FC<SwitchOrganizationDialogProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { showError } = useNotification();
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [orgTreeData, setOrgTreeData] = useState<IUserOrgItem[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const { setCurrentOrg, currentOrgName } = useOrgContentStore();
+  const { setCurrentOrg, currentOrgId, currentOrgName } = useOrgContentStore();
   const GET_ALL_USER_ORGS_BY_USER_ID = useOrgContentStore(
     (s) => s.GET_ALL_USER_ORGS_BY_USER_ID
   );
@@ -140,36 +142,54 @@ const SwitchOrganizationDialog: React.FC<SwitchOrganizationDialogProps> = ({
   const hasResults = searchResults.length > 0;
 
   const handleSelectById = (orgId: string) => {
+    if (orgId === currentOrgId) return;
     setSelected(orgId);
   };
 
   const handleSelectByNode = (node: IUserOrgItem) => {
-    setSelected(node.orgId);
+    handleSelectById(node.orgId);
   };
 
   const handleClose = () => {
     setSelected(null);
     setSearch('');
     setDebouncedSearch('');
+    setConfirmOpen(false);
     onClose();
   };
 
   const handleSwitch = () => {
     if (!tenant || !selected) return;
+    setConfirmOpen(true);
+  };
 
+  const handleConfirmSwitch = () => {
     const targetNode = flatTree.find((item) => item.orgId === selected);
-    if (!targetNode) return;
+    if (!tenant || !targetNode) {
+      setConfirmOpen(false);
+      showError('Failed to switch organization. Please try again.');
+      return;
+    }
 
-    setCurrentOrg(targetNode.orgId, targetNode.name ?? '');
+    const prevOrgId = currentOrgId;
+    const prevOrgName = currentOrgName;
 
-    const nextPath = resolveNextPath({
-      tenant,
-      currentPathname: location.pathname,
-      targetNode,
-    });
+    try {
+      setCurrentOrg(targetNode.orgId, targetNode.name ?? '');
+      navigate(getAppBasePath(tenant));
+      handleClose();
+    } catch (error) {
+      console.error('[Switch Organization] Failed', error);
 
-    navigate(nextPath);
-    handleClose();
+      setConfirmOpen(false);
+      showError('Failed to switch organization. Please try again.');
+
+      try {
+        if (prevOrgId) setCurrentOrg(prevOrgId, prevOrgName ?? '');
+      } catch {
+        return;
+      }
+    }
   };
 
   return (
@@ -221,7 +241,8 @@ const SwitchOrganizationDialog: React.FC<SwitchOrganizationDialogProps> = ({
                   key={node.orgId}
                   className={`search-result-item ${
                     selected === node.orgId ? 'selected' : ''
-                  }`}
+                  } ${node.orgId === currentOrgId ? 'is-current' : ''}`}
+                  aria-disabled={node.orgId === currentOrgId}
                   onClick={() => handleSelectByNode(node)}
                 >
                   <Box className="search-result-left">
@@ -291,7 +312,7 @@ const SwitchOrganizationDialog: React.FC<SwitchOrganizationDialogProps> = ({
               );
             }}
           >
-            {renderTree(orgTreeData, selected, 0, currentOrgName)}
+            {renderTree(orgTreeData, selected, 0, currentOrgId)}
           </SimpleTreeView>
         )}
       </DialogContent>
@@ -316,6 +337,14 @@ const SwitchOrganizationDialog: React.FC<SwitchOrganizationDialogProps> = ({
           Switch
         </Button>
       </DialogActions>
+
+      <SimpleConfirmDialog
+        open={confirmOpen}
+        title="Switch Organization?"
+        content="Switching organizations will redirect you to the new organization's home page. Any unsaved changes will be lost."
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmSwitch}
+      />
     </Dialog>
   );
 };

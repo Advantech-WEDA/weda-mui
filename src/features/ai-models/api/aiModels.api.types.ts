@@ -204,6 +204,7 @@ export interface IAiModelDeploymentTargetResult {
   deviceDeploymentId?: string;
   edgeFilePath: string | null;
   state: DeploymentDeviceState;
+  rejectReason?: string | null;
 }
 
 export interface IAiModelDeployment {
@@ -389,5 +390,5 @@ export interface DeployDeviceRow {
   lastSeen?: string;
   latestData?: IDataStreamsLatestResponse;
   deploymentStatus?: string | null;
-  deployedEditions?: string;
+  deployedEditions?: string[];
 }

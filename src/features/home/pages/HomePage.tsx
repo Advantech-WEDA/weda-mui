@@ -19,7 +19,7 @@ function Home() {
         className="announcement-version"
         sx={{ mb: 3 }}
       >
-        Version: V1.2.0
+        Version: v1.2.2
       </Typography>
 
       <Box component="section" className="announcement-section" sx={{ mb: 4 }}>
@@ -64,6 +64,22 @@ function Home() {
           <Box component="li">
             <Typography variant="body1">AI Model Deployment</Typography>
           </Box>
+          <Box component="li">
+            <Typography variant="body1">MQTT Brokers</Typography>
+          </Box>
+          <Box component="li">
+            <Typography variant="body1">DataStream Bridges</Typography>
+          </Box>
+          <Box component="li">
+            <Typography variant="body1">
+              Analyzer(Transfer Function / JavaScript)
+            </Typography>
+          </Box>
+          <Box component="li">
+            <Typography variant="body1">
+              AI Model Deployment Configurator
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
@@ -79,13 +95,13 @@ function Home() {
 
         <Box component="ul" className="announcement-list" sx={{ pl: 3, m: 0 }}>
           <Box component="li">
-            <Typography variant="body1">MQTT Broker Configs </Typography>
+            <Typography variant="body1">MQTT DataBridge TLS</Typography>
           </Box>
           <Box component="li">
-            <Typography variant="body1">DataStream Bridges </Typography>
+            <Typography variant="body1">SubNode Management</Typography>
           </Box>
           <Box component="li">
-            <Typography variant="body1">Analyzer </Typography>
+            <Typography variant="body1">Web SSH</Typography>
           </Box>
         </Box>
       </Box>

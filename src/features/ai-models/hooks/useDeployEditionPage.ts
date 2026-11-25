@@ -13,10 +13,18 @@ import axios from 'axios';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import type { DeployDeviceRow } from '../api/aiModels.api.types';
+import { buildDeploymentTargets } from '../api/deploymentTargets';
 import {
-  DEFAULT_AI_MODEL_DEPLOYMENT_TASKS,
-  type DeployDeviceRow,
-} from '../api/aiModels.api.types';
+  DEFAULT_DEPLOY_SETUP,
+  type DeploySetup,
+  type DeviceContainersState,
+  type EditionChecksumStatus,
+  getRunningContainerNames,
+  isRestartContainerApply,
+  parseEditionChecksum,
+  validateDeploySetup,
+} from '../domain/deploySetup';
 import { getDeploymentStatusGroup } from '../domain/types';
 import { useAIModelsStore } from '../store/useAIModelsStore';
 
@@ -47,12 +55,81 @@ export function useDeployEditionPage() {
   const POST_AI_MODEL_DEPLOYMENT = useAIModelsStore(
     (s) => s.POST_AI_MODEL_DEPLOYMENT
   );
+  const GET_AI_MODEL_EDITION = useAIModelsStore((s) => s.GET_AI_MODEL_EDITION);
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const submittingRef = useRef(false);
+
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+
+  const [deploySetup, setDeploySetup] =
+    useState<DeploySetup>(DEFAULT_DEPLOY_SETUP);
+
+  const deploySetupErrors = useMemo(
+    () => validateDeploySetup(deploySetup),
+    [deploySetup]
+  );
+  const isRestartContainer = isRestartContainerApply(deploySetup.apply);
+  const isChecksumVerify = deploySetup.validate === 'CHECKSUM_VERIFY';
+
+  const [editionChecksumStatus, setEditionChecksumStatus] =
+    useState<EditionChecksumStatus>('idle');
+
+  useEffect(() => {
+    if (!isChecksumVerify || !currentOrgId || !modelId || !decodedEdition) {
+      return;
+    }
+
+    let ignore = false;
+
+    setEditionChecksumStatus('loading');
+
+    GET_AI_MODEL_EDITION({
+      orgId: currentOrgId,
+      modelId,
+      edition: decodedEdition,
+    })
+      .then((detail) => {
+        if (ignore) return;
+
+        const { expectedChecksum, algorithm } = parseEditionChecksum(
+          detail.file?.fileHash,
+          detail.file?.hashAlg
+        );
+
+        setDeploySetup((prev) => ({
+          ...prev,
+          expectedChecksum,
+          algorithm: algorithm ?? prev.algorithm,
+        }));
+        setEditionChecksumStatus('loaded');
+      })
+      .catch(() => {
+        if (!ignore) setEditionChecksumStatus('error');
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    isChecksumVerify,
+    currentOrgId,
+    modelId,
+    decodedEdition,
+    GET_AI_MODEL_EDITION,
+  ]);
+
+  const [containerByDeviceId, setContainerByDeviceId] = useState<
+    Record<string, string>
+  >({});
+  const [deviceContainers, setDeviceContainers] = useState<
+    Record<string, DeviceContainersState>
+  >({});
+
+  const containersRequestedRef = useRef(new Set<string>());
 
   const [searchWord, setSearchWord] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status | ''>('');
@@ -66,7 +143,6 @@ export function useDeployEditionPage() {
   const latestTimerRef = useRef<number | null>(null);
 
   const loading = useDeviceStore((s) => s.loading);
-  const totalCount = useDeviceStore((s) => s.totalCount);
   const deviceItems = useDeviceStore((s) => s.deviceItems);
   const deviceLatestMap = useDeviceStore((s) => s.deviceLatestMap);
 
@@ -75,7 +151,7 @@ export function useDeployEditionPage() {
   );
   const deviceAiModelsMap = useAIModelsStore((s) => s.deviceAiModelsMap);
 
-  const GET_DEVICES = useDeviceStore((s) => s.GET_DEVICES);
+  const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
   const GET_DEVICE_LATEST_DATA = useDeviceStore(
     (s) => s.GET_DEVICE_LATEST_DATA
   );
@@ -84,6 +160,9 @@ export function useDeployEditionPage() {
   );
   const GET_ALL_DEVICE_AI_MODELS = useAIModelsStore(
     (s) => s.GET_ALL_DEVICE_AI_MODELS
+  );
+  const GET_DEVICE_CAPABILITIES = useDeviceStore(
+    (s) => s.GET_DEVICE_CAPABILITIES
   );
 
   const pageTitle = decodedEdition
@@ -157,11 +236,9 @@ export function useDeployEditionPage() {
       }
 
       try {
-        await GET_DEVICES(
+        await GET_ALL_DEVICES(
           {
             orgId: currentOrgId,
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
             sorting: `${sortKey} ${sortOrder}`,
           },
           signal
@@ -182,12 +259,10 @@ export function useDeployEditionPage() {
       currentOrgId,
       modelId,
       decodedEdition,
-      page,
-      rowsPerPage,
       sortKey,
       sortOrder,
       showError,
-      GET_DEVICES,
+      GET_ALL_DEVICES,
       GET_ALL_AI_MODEL_EDITION_DEPLOYMENTS,
     ]
   );
@@ -196,6 +271,8 @@ export function useDeployEditionPage() {
     const keyword = searchWord.trim().toLowerCase();
 
     return (deviceItems ?? [])
+
+      .filter((item) => item.type === 'WedaNode')
       .map((item) => {
         const latestData = deviceLatestMap[item.deviceId];
 
@@ -217,7 +294,14 @@ export function useDeployEditionPage() {
 
   const hasFilter = Boolean(searchWord || statusFilter);
 
-  const pagedRows = rows;
+  const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+
+  const pagedRows = useMemo(
+    () =>
+      rows.slice(currentPage * rowsPerPage, (currentPage + 1) * rowsPerPage),
+    [rows, currentPage, rowsPerPage]
+  );
 
   const isDeploymentStatusLoading = aiModelEditionDeploymentsList === null;
 
@@ -241,7 +325,7 @@ export function useDeployEditionPage() {
             .filter((item) => item.state === 'DEPLOYED' && item.edition)
             .map((item) => item.edition as string)
         )
-      ).join(', ');
+      );
 
       return {
         ...device,
@@ -249,7 +333,9 @@ export function useDeployEditionPage() {
         latestData: deviceLatestMap[device.deviceId] ?? null,
         deploymentStatus:
           deploymentStatusByDeviceId.get(device.deviceId) ?? null,
-        deployedEditions: deployedEditions || undefined,
+        deployedEditions: deployedEditions.length
+          ? deployedEditions
+          : undefined,
       };
     });
   }, [
@@ -358,11 +444,73 @@ export function useDeployEditionPage() {
     clearLatestPolling,
   ]);
 
+  useEffect(() => {
+    if (!isRestartContainer || !aiModelEligibleDeviceIdsKey) return;
+
+    const ids = aiModelEligibleDeviceIdsKey
+      .split(',')
+      .filter((id) => !containersRequestedRef.current.has(id));
+
+    if (!ids.length) return;
+
+    let ignore = false;
+    const pending = new Set(ids);
+    const requested = containersRequestedRef.current;
+
+    ids.forEach((id) => requested.add(id));
+
+    const settle = (deviceId: string, state: DeviceContainersState) => {
+      if (ignore) return;
+      pending.delete(deviceId);
+      setDeviceContainers((prev) => ({ ...prev, [deviceId]: state }));
+    };
+
+    setDeviceContainers((prev) => ({
+      ...prev,
+      ...Object.fromEntries(
+        ids.map((id): [string, DeviceContainersState] => [
+          id,
+          { status: 'loading' },
+        ])
+      ),
+    }));
+
+    ids.forEach((deviceId) => {
+      GET_DEVICE_CAPABILITIES(deviceId)
+        .then((capabilities) =>
+          settle(deviceId, {
+            status: 'loaded',
+            names: getRunningContainerNames(capabilities?.data?.reported),
+          })
+        )
+        .catch(() => settle(deviceId, { status: 'error' }));
+    });
+
+    return () => {
+      ignore = true;
+
+      pending.forEach((id) => requested.delete(id));
+    };
+  }, [
+    isRestartContainer,
+    aiModelEligibleDeviceIdsKey,
+    GET_DEVICE_CAPABILITIES,
+  ]);
+
+  const handleDeploySetupChange = (patch: Partial<DeploySetup>) => {
+    setDeploySetup((prev) => ({ ...prev, ...patch }));
+  };
+
+  const handleContainerChange = (deviceId: string, containerName: string) => {
+    setContainerByDeviceId((prev) => ({ ...prev, [deviceId]: containerName }));
+  };
+
   const handleClearFilters = () => {
     setSearchWord('');
     setStatusFilter('');
     setSortKey('deviceId');
     setSortOrder('asc');
+    setPage(0);
   };
 
   const handleSort = (key: TableHeaderSortKey) => {
@@ -378,10 +526,12 @@ export function useDeployEditionPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handleSelectDevice = (deviceId: string) => {
@@ -427,6 +577,23 @@ export function useDeployEditionPage() {
       return false;
     }
 
+    if (isChecksumVerify && editionChecksumStatus === 'loading') {
+      showError('The edition’s checksum is still loading');
+      return false;
+    }
+
+    if (Object.keys(validateDeploySetup(deploySetup)).length > 0) {
+      return false;
+    }
+
+    if (
+      isRestartContainer &&
+      selectedDeviceIds.some((deviceId) => !containerByDeviceId[deviceId])
+    ) {
+      showError('Please select a container to restart for each device');
+      return false;
+    }
+
     return true;
   }, [
     hasPermission,
@@ -434,8 +601,22 @@ export function useDeployEditionPage() {
     modelId,
     decodedEdition,
     selectedDeviceIds,
+    deploySetup,
+    isChecksumVerify,
+    editionChecksumStatus,
+    isRestartContainer,
+    containerByDeviceId,
     showError,
   ]);
+
+  const canSubmit =
+    hasPermission &&
+    !submitting &&
+    selectedDeviceIds.length > 0 &&
+    Object.keys(deploySetupErrors).length === 0 &&
+    (!isChecksumVerify || editionChecksumStatus === 'loaded') &&
+    (!isRestartContainer ||
+      selectedDeviceIds.every((deviceId) => containerByDeviceId[deviceId]));
 
   const handleSubmitConfirmOpen = () => {
     if (submitting) return;
@@ -446,9 +627,11 @@ export function useDeployEditionPage() {
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     if (!validateSubmit()) return;
+
+    submittingRef.current = true;
 
     try {
       setSubmitting(true);
@@ -457,25 +640,26 @@ export function useDeployEditionPage() {
         orgId: currentOrgId!,
         modelId: modelId!,
         edition: decodedEdition!,
-        targets: [
-          {
-            deviceIdList: selectedDeviceIds,
-            tasks: DEFAULT_AI_MODEL_DEPLOYMENT_TASKS,
-          },
-        ],
+        targets: buildDeploymentTargets(
+          deploySetup,
+          selectedDeviceIds,
+          containerByDeviceId
+        ),
       });
 
       closeDialogs();
 
-      showSuccess('Success: Deployment task(s) created.');
+      showSuccess('Success: Deployment task(s) created.'); //
 
       navigate(`/ai-models/${modelId}/editions/${edition}/deployment`);
     } catch (error) {
       const message = getDeployErrorMessage(error, 'Deploy failed');
 
+      closeDialogs();
       showError(message);
       console.error('[DeployEdition] Deploy failed:', error);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -493,6 +677,8 @@ export function useDeployEditionPage() {
 
   return {
     cancelOpen,
+    submitting,
+    canSubmit,
     submitOpen,
     selectedDeviceIds,
     handleSelectDevice,
@@ -502,6 +688,15 @@ export function useDeployEditionPage() {
     handleConfirmCancel: closeDialogs,
     handleOpenCancelDialog,
     handleSubmitConfirmOpen,
+
+    deploySetup,
+    deploySetupErrors,
+    editionChecksumStatus,
+    isRestartContainer,
+    containerByDeviceId,
+    deviceContainers,
+    handleDeploySetupChange,
+    handleContainerChange,
 
     pageTitle,
 
@@ -514,11 +709,11 @@ export function useDeployEditionPage() {
     selectableDeviceIds,
     searchWord,
     statusFilter,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
-    visibleTotalCount: hasFilter ? rows.length : totalCount,
+    visibleTotalCount: rows.length,
     hasFilter,
     setPage,
     setRowsPerPage,

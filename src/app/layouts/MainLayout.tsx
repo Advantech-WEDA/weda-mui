@@ -3,12 +3,14 @@ import './layout.scss';
 import LayoutHeader from '@app/layouts/Header';
 import Sidebar from '@app/layouts/Sidebar';
 import { Box, CssBaseline } from '@mui/material';
+import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const currentOrgId = useOrgContentStore((s) => s.currentOrgId);
 
   const toggleSidebar = () => setCollapsed((prev) => !prev);
 
@@ -31,7 +33,7 @@ const MainLayout = () => {
         </Box>
 
         <Box className="layout-content">
-          <Outlet />
+          <Outlet key={currentOrgId} />
         </Box>
       </Box>
     </Box>

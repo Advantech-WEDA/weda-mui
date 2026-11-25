@@ -29,6 +29,14 @@ export const breadcrumbs = {
       label: 'AI Models',
       to: `${homePath}/devices/:deviceId/ai-models`,
     },
+    dataStreams: {
+      label: 'DataStreams',
+      to: `${homePath}/devices/:deviceId/data-streams`,
+    },
+    analyzers: {
+      label: 'Analyzers',
+      to: `${homePath}/devices/:deviceId/analyzers`,
+    },
   },
   stacks: {
     list: { label: 'Container Stacks', to: `${homePath}/container-stacks` },
@@ -40,10 +48,16 @@ export const breadcrumbs = {
   registries: {
     list: { label: 'Registries', to: `${homePath}/registries` },
   },
-  mqttBrokerConfigs: {
+  mqttBrokers: {
     list: {
-      label: 'MQTT Broker Configs',
-      to: `${homePath}/mqtt-broker-configs`,
+      label: 'MQTT Brokers',
+      to: `${homePath}/mqtt-brokers`,
+    },
+  },
+  dataStreamBridges: {
+    list: {
+      label: 'DataStream Bridges',
+      to: `${homePath}/data-stream-bridges`,
     },
   },
   clientCredentials: {

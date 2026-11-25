@@ -6,6 +6,7 @@ import {
   useAIModelsStore,
 } from '@features/ai-models';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { useNotification } from '@shared/ui';
@@ -63,10 +64,6 @@ export function useDeviceAiModelsTab({
   const [selectedRow, setSelectedRow] = useState<DeviceAiModelRow | null>(null);
   const [inputValue, setInputValue] = useState('');
 
-  const [retryOpen, setRetryOpen] = useState(false);
-  const [selectedRetryRow, setSelectedRetryRow] =
-    useState<DeviceAiModelRow | null>(null);
-
   const [searchWord, setSearchWord] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<DeploymentStatusGroup | ''>(
     ''
@@ -90,9 +87,6 @@ export function useDeviceAiModelsTab({
     [aiModelDeviceDeploymentsList]
   );
 
-  const POST_AI_MODEL_DEPLOYMENT = useAIModelsStore(
-    (s) => s.POST_AI_MODEL_DEPLOYMENT
-  );
   const DELETE_AI_MODEL_FROM_DEVICE = useAIModelsStore(
     (s) => s.DELETE_AI_MODEL_FROM_DEVICE
   );
@@ -160,6 +154,15 @@ export function useDeviceAiModelsTab({
       controller.abort();
     };
   }, [fetchDeviceAiModels]);
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount: aiModelDeviceDeploymentsList?.totalCount ?? 0,
+    itemCount: deviceAiModelItems.length,
+    loading,
+  });
 
   const rows = useMemo<DeviceAiModelRow[]>(() => {
     if (deviceAiModelItems.length === 0) return [];
@@ -300,46 +303,13 @@ export function useDeviceAiModelsTab({
     }
   };
 
-  const handleOpenRetry = (row: DeviceAiModelRow) => {
-    setSelectedRetryRow(row);
-    setRetryOpen(true);
-  };
-
-  const handleCloseRetry = () => {
-    setRetryOpen(false);
-    setSelectedRetryRow(null);
-  };
-
-  const handleConfirmRetry = async () => {
-    if (!selectedRetryRow || !hasPermission || !currentOrgId || !deviceId)
-      return;
-
-    try {
-      await POST_AI_MODEL_DEPLOYMENT({
-        orgId: currentOrgId,
-        modelId: selectedRetryRow.modelId,
-        edition: selectedRetryRow.edition,
-        targets: [{ deviceIdList: [deviceId] }],
-      });
-
-      showSuccess('Deployment retried successfully');
-
-      fetchDeviceAiModels();
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Retry deployment failed';
-
-      showError(message);
-      console.error('[Retry AI model deployment] failed:', message);
-    } finally {
-      handleCloseRetry();
-    }
-  };
-
   return {
     hasPermission,
 
-    loading: initialLoadPhase !== 'done' || (loading && !isPollingRef.current),
+    loading:
+      initialLoadPhase !== 'done' ||
+      (loading && !isPollingRef.current) ||
+      isResolvingPage,
     lastUpdated,
     pagedRows,
     statusCounts,
@@ -350,9 +320,7 @@ export function useDeviceAiModelsTab({
     hasFilter,
     visibleTotalCount,
     deleteOpen,
-    retryOpen,
     selectedRow,
-    selectedRetryRow,
     inputValue,
     canDelete,
     setPage,
@@ -366,8 +334,5 @@ export function useDeviceAiModelsTab({
     handleClose,
     handleOpenDelete,
     handleConfirmDelete,
-    handleOpenRetry,
-    handleCloseRetry,
-    handleConfirmRetry,
   };
 }

@@ -10,13 +10,25 @@ import {
   EditContainerStackPage,
 } from '@features/container-stacks';
 import {
+  AddDataStreamBridgePage,
+  DataStreamBridgeDetailPage,
+  DataStreamBridgeListPage,
+  EditDataStreamBridgePage,
+} from '@features/data-stream-bridges';
+import {
+  AddAnalyzerPage,
+  AddDataStreamPage,
   AddDevicePage,
+  AnalyzerDetailPage,
+  DataStreamDetailPage,
   DeployDeviceAiModelPage,
   DeployDevicePage,
   DeviceAiModelEditionDetailPage,
   DeviceDetailPage,
   DeviceListPage,
   DeviceStackDetailPage,
+  EditAnalyzerPage,
+  EditDataStreamPage,
   EditDevicePage,
 } from '@features/devices';
 import { HomePage } from '@features/home';
@@ -38,6 +50,7 @@ import {
 } from '@features/registries';
 import { APP_ROUTE_PATTERN, getAppBasePath } from '@shared/lib/appRoute';
 import { getTenant } from '@shared/lib/baseUrl';
+import { GlobalLoadingOverlay } from '@shared/ui';
 import { SnackbarProvider } from 'notistack';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
@@ -52,6 +65,12 @@ import {
   EditionDetailPage,
   EditModelPage,
 } from '@/features/ai-models';
+import {
+  AddMqttBrokerPage,
+  EditMqttBrokerPage,
+  MqttBrokerDetailPage,
+  MqttBrokerListPage,
+} from '@/features/mqtt-brokers';
 
 const tenantPath = getTenant();
 
@@ -126,6 +145,83 @@ const childrenRoutes = [
         path: ':deviceId/:tab',
         element: <DeviceDetailPage />,
         handle: { breadcrumb: [breadcrumbs.home, breadcrumbs.devices.list] },
+      },
+      {
+        path: ':deviceId/analyzers/add',
+        element: <AddAnalyzerPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.analyzers,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/analyzers/:analyzerId',
+        element: <AnalyzerDetailPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.analyzers,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/analyzers/:analyzerId/edit',
+        element: <EditAnalyzerPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.analyzers,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/data-streams/add',
+        element: <AddDataStreamPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.dataStreams,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/data-streams/:dataStreamId/edit',
+        element: <EditDataStreamPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.dataStreams,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/data-streams/:dataStreamId',
+        element: <DataStreamDetailPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.dataStreams,
+          ],
+        },
+      },
+      {
+        path: ':deviceId/data-streams/:dataStreamId/:tab',
+        element: <DataStreamDetailPage />,
+        handle: {
+          breadcrumb: [
+            breadcrumbs.home,
+            breadcrumbs.devices.list,
+            breadcrumbs.devices.dataStreams,
+          ],
+        },
       },
       {
         path: ':deviceId/container-stacks/deploy',
@@ -299,6 +395,75 @@ const childrenRoutes = [
       },
     ],
   },
+  {
+    path: 'mqtt-brokers',
+    children: [
+      {
+        path: '',
+        element: <MqttBrokerListPage />,
+        handle: { breadcrumb: [breadcrumbs.home] },
+      },
+      {
+        path: 'add',
+        element: <AddMqttBrokerPage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.mqttBrokers.list],
+        },
+      },
+      {
+        path: ':mqttConfigId/edit',
+        element: <EditMqttBrokerPage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.mqttBrokers.list],
+        },
+      },
+      {
+        path: ':mqttConfigId',
+        element: <MqttBrokerDetailPage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.mqttBrokers.list],
+        },
+      },
+    ],
+  },
+  {
+    path: 'data-stream-bridges',
+    children: [
+      {
+        path: '',
+        element: <DataStreamBridgeListPage />,
+        handle: { breadcrumb: [breadcrumbs.home] },
+      },
+      {
+        path: 'add',
+        element: <AddDataStreamBridgePage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.dataStreamBridges.list],
+        },
+      },
+      {
+        path: ':bridgeId/edit',
+        element: <EditDataStreamBridgePage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.dataStreamBridges.list],
+        },
+      },
+      {
+        path: ':bridgeId',
+        element: <DataStreamBridgeDetailPage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.dataStreamBridges.list],
+        },
+      },
+      {
+        path: ':bridgeId/:tab',
+        element: <DataStreamBridgeDetailPage />,
+        handle: {
+          breadcrumb: [breadcrumbs.home, breadcrumbs.dataStreamBridges.list],
+        },
+      },
+    ],
+  },
 ];
 
 export const router = createBrowserRouter([
@@ -313,6 +478,7 @@ export const router = createBrowserRouter([
   {
     element: (
       <SnackbarProvider>
+        <GlobalLoadingOverlay />
         <ProtectedRoute />
       </SnackbarProvider>
     ),

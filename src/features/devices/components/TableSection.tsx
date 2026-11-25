@@ -90,9 +90,11 @@ export default function TableSection({
 
         <TableBody>
           {loading ? (
-            <TableCell colSpan={6} align="center">
-              <PageTableLoadingIndicator />
-            </TableCell>
+            <PageTableRow>
+              <TableCell colSpan={COLUMNS.length} align="center">
+                <PageTableLoadingIndicator />
+              </TableCell>
+            </PageTableRow>
           ) : isErrorEmpty ? (
             <PageTableEmptyState
               variant="error"

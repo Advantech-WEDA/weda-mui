@@ -20,6 +20,12 @@ import type {
   IStackConfigsListResponse,
   IUpdateStackConfigPayload,
 } from '../api/stacks.api.types';
+import {
+  applyStackStatusOverrides,
+  STACK_STATUS_OVERRIDE_TTL_MS,
+  type StackStatusOverride,
+  upsertStackStatusOverride,
+} from '../domain/stackStatusOverride';
 
 interface IDeploymentsState {
   totalCount: number;
@@ -28,6 +34,8 @@ interface IDeploymentsState {
   stackConfigsItems: IStackConfigsItem[];
   stackConfigById: IStackConfigsItem | null;
 
+  stackStatusOverrides: StackStatusOverride[];
+
   GET_DEPLOYMENTS: (
     params: IGetDeploymentsParams,
     signal?: AbortSignal
@@ -35,11 +43,19 @@ interface IDeploymentsState {
 
   GET_ALL_DEPLOYMENTS: (
     params: Omit<IGetDeploymentsParams, 'skipCount' | 'maxResultCount'>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options?: {
+      keepItems?: boolean;
+    }
   ) => Promise<IDeploymentListResponse>;
 
   GET_STACK_CONFIGS: (
     params: IGetStackConfigsParams,
+    signal?: AbortSignal
+  ) => Promise<IStackConfigsListResponse>;
+
+  GET_ALL_STACK_CONFIGS: (
+    params: Omit<IGetStackConfigsParams, 'skipCount' | 'maxResultCount'>,
     signal?: AbortSignal
   ) => Promise<IStackConfigsListResponse>;
 
@@ -68,6 +84,12 @@ interface IDeploymentsState {
     params: IDeleteStackFromDeviceParams
   ) => Promise<void>;
 
+  SET_STACK_STATUS: (params: {
+    deviceId: string;
+    stackConfigId: string;
+    status: string;
+  }) => void;
+
   POST_DEPLOY_STACK_TO_DEVICES: (
     payload: IDeployStackToDevicesPayload
   ) => Promise<IDeploymentItem>;
@@ -76,9 +98,15 @@ interface IDeploymentsState {
     params: IGetListStacksInDeviceParams,
     signal?: AbortSignal
   ) => Promise<IDeploymentListResponse>;
+
+  GET_ALL_STACKS_IN_DEVICE: (
+    params: Omit<IGetListStacksInDeviceParams, 'skipCount' | 'maxResultCount'>,
+    signal?: AbortSignal
+  ) => Promise<IDeploymentListResponse>;
 }
 
 type DeploymentsSet = StoreApi<IDeploymentsState>['setState'];
+type DeploymentsGet = StoreApi<IDeploymentsState>['getState'];
 
 const withLoading = async <T>(
   set: DeploymentsSet,
@@ -118,6 +146,22 @@ const handleStoreError = (
   throw new Error(errorMessage);
 };
 
+const withStatusOverrides = (
+  get: DeploymentsGet,
+  set: DeploymentsSet,
+  data: IDeploymentListResponse
+): IDeploymentListResponse => {
+  const { items, overrides } = applyStackStatusOverrides(
+    data.items,
+    get().stackStatusOverrides,
+    Date.now()
+  );
+
+  set({ stackStatusOverrides: overrides });
+
+  return { ...data, items };
+};
+
 const resetDeploymentState = () => ({
   totalCount: 0,
   deploymentItems: [],
@@ -140,17 +184,22 @@ const removeDeploymentItem = (
       )
   );
 
-export const useDeploymentsStore = create<IDeploymentsState>()((set) => ({
+export const useDeploymentsStore = create<IDeploymentsState>()((set, get) => ({
   totalCount: 0,
   loading: false,
   deploymentItems: [],
   stackConfigsItems: [],
   stackConfigById: null,
+  stackStatusOverrides: [],
 
   async GET_DEPLOYMENTS(params, signal): Promise<IDeploymentListResponse> {
     try {
       return await withLoading(set, async () => {
-        const data = await stacksApi.getDeployments(params, signal);
+        const data = withStatusOverrides(
+          get,
+          set,
+          await stacksApi.getDeployments(params, signal)
+        );
 
         set({
           deploymentItems: data.items,
@@ -164,14 +213,22 @@ export const useDeploymentsStore = create<IDeploymentsState>()((set) => ({
     }
   },
 
-  async GET_ALL_DEPLOYMENTS(params, signal): Promise<IDeploymentListResponse> {
+  async GET_ALL_DEPLOYMENTS(
+    params,
+    signal,
+    options
+  ): Promise<IDeploymentListResponse> {
     try {
       return await withLoading(set, async () => {
-        set(resetDeploymentState());
+        if (!options?.keepItems) set(resetDeploymentState());
 
-        const data = await fetchAllPages(
-          (page) => stacksApi.getDeployments({ ...params, ...page }, signal),
-          MAX_PAGE_SIZE
+        const data = withStatusOverrides(
+          get,
+          set,
+          await fetchAllPages(
+            (page) => stacksApi.getDeployments({ ...params, ...page }, signal),
+            MAX_PAGE_SIZE
+          )
         );
 
         set({
@@ -192,6 +249,31 @@ export const useDeploymentsStore = create<IDeploymentsState>()((set) => ({
     try {
       return await withLoading(set, async () => {
         const data = await stacksApi.getStackConfigs(params, signal);
+
+        set({
+          stackConfigsItems: data.items,
+          totalCount: data.totalCount,
+        });
+
+        return data;
+      });
+    } catch (error) {
+      return handleStoreError(error, 'Failed to get stack configs list.', () =>
+        set(resetStackConfigsState())
+      );
+    }
+  },
+
+  async GET_ALL_STACK_CONFIGS(
+    params,
+    signal
+  ): Promise<IStackConfigsListResponse> {
+    try {
+      return await withLoading(set, async () => {
+        const data = await fetchAllPages(
+          (page) => stacksApi.getStackConfigs({ ...params, ...page }, signal),
+          MAX_PAGE_SIZE
+        );
 
         set({
           stackConfigsItems: data.items,
@@ -334,6 +416,27 @@ export const useDeploymentsStore = create<IDeploymentsState>()((set) => ({
     }
   },
 
+  SET_STACK_STATUS({ deviceId, stackConfigId, status }) {
+    const stackStatusOverrides = upsertStackStatusOverride(
+      get().stackStatusOverrides,
+      {
+        deviceId,
+        stackConfigId,
+        status,
+        expiresAt: Date.now() + STACK_STATUS_OVERRIDE_TTL_MS,
+      }
+    );
+
+    set((state) => ({
+      stackStatusOverrides,
+      deploymentItems: state.deploymentItems.map((item) =>
+        item.deviceId === deviceId && item.stackConfigId === stackConfigId
+          ? { ...item, status }
+          : item
+      ),
+    }));
+  },
+
   async POST_DEPLOY_STACK_TO_DEVICES(params): Promise<IDeploymentItem> {
     try {
       return await withLoading(set, async () => {
@@ -352,7 +455,43 @@ export const useDeploymentsStore = create<IDeploymentsState>()((set) => ({
   ): Promise<IDeploymentListResponse> {
     try {
       return await withLoading(set, async () => {
-        const data = await stacksApi.getListStacksInDevice(params, signal);
+        const data = withStatusOverrides(
+          get,
+          set,
+          await stacksApi.getListStacksInDevice(params, signal)
+        );
+
+        set({
+          deploymentItems: data.items,
+          totalCount: data.totalCount,
+        });
+
+        return data;
+      });
+    } catch (error) {
+      return handleStoreError(
+        error,
+        '[Get list of stacks in device] Fetch failed',
+        () => set(resetDeploymentState())
+      );
+    }
+  },
+
+  async GET_ALL_STACKS_IN_DEVICE(
+    params,
+    signal
+  ): Promise<IDeploymentListResponse> {
+    try {
+      return await withLoading(set, async () => {
+        const data = withStatusOverrides(
+          get,
+          set,
+          await fetchAllPages(
+            (page) =>
+              stacksApi.getListStacksInDevice({ ...params, ...page }, signal),
+            MAX_PAGE_SIZE
+          )
+        );
 
         set({
           deploymentItems: data.items,

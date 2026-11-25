@@ -4,6 +4,7 @@ import { AppChip, Breadcrumbs } from '@shared/ui';
 import { useParams } from 'react-router-dom';
 
 import type { IRegistryItem } from '../api/registries.api.types';
+import { getRegistryTypeLabel } from '../domain/types';
 import { REGISTRY_TYPE_CHIP } from './registryTypeChip';
 
 interface IProps {
@@ -210,7 +211,10 @@ export default function Detail({ registryData, onDelete, onEdit }: IProps) {
                   }
                 />
 
-                <InfoRow label="Type" value={registryType || '-'} />
+                <InfoRow
+                  label="Type"
+                  value={getRegistryTypeLabel(registryType)}
+                />
 
                 <InfoRow
                   label="Created"

@@ -90,7 +90,7 @@ function Devices() {
               onChange={(value) =>
                 handleStatusFilterChange(value as Status | '')
               }
-              placeholder="Device status"
+              placeholder="Registration status"
               minWidth={147}
               options={statusOptions}
             />

@@ -10,6 +10,7 @@ export default function DetailStack() {
     inputValue,
     setInputValue,
     hasPermission,
+    canDelete,
     stackData,
     handleChangeTab,
     handleEdit,
@@ -32,12 +33,12 @@ export default function DetailStack() {
       <RevokeDialog
         open={deleteOpen}
         onClose={handleCloseDialog}
-        title="Delete Deployment"
-        content={`Are you sure you want to delete “${stackData.stackName}”? This action is permanent and cannot be undone. All data associated with this deployment will be wiped.`}
-        inputLabel="Re-enter the deployment name to confirm deletion"
-        mismatchText="Deployment name does not match."
+        title="Delete Container Stack"
+        content={`Are you sure you want to delete “${stackData.stackName}”? This action is permanent and cannot be undone. All data associated with this stack will be wiped.`}
+        inputLabel="Re-enter the stack name to confirm deletion"
+        mismatchText="Stack name does not match."
         confirmName={stackData.stackName || ''}
-        confirmDisabled={!hasPermission}
+        confirmDisabled={!canDelete}
         inputValue={inputValue}
         onInputChange={setInputValue}
         onConfirm={handleConfirmDelete}

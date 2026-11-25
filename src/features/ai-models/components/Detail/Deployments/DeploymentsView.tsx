@@ -45,7 +45,6 @@ export interface DeploymentsViewProps {
   handleClose: () => void;
   handleOpenDelete: (row: EditionDeploymentDeviceRow) => void;
   handleConfirmDelete: () => void | Promise<void>;
-  handleRetry: (deviceId: string) => void | Promise<void>;
 }
 
 export default function DeploymentsView({
@@ -75,7 +74,6 @@ export default function DeploymentsView({
   handleClose,
   handleOpenDelete,
   handleConfirmDelete,
-  handleRetry,
 }: DeploymentsViewProps) {
   return (
     <Box component="article">
@@ -219,7 +217,6 @@ export default function DeploymentsView({
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          onRetry={handleRetry}
           onDelete={handleOpenDelete}
         />
 

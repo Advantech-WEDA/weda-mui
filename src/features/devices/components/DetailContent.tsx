@@ -20,6 +20,8 @@ import {
 } from '../domain/devicePolicy';
 import { ACTIVATION_ACTION_ICON_MAP } from './activationActionDisplay';
 import AiModels from './Detail/AiModels/Index';
+import Analyzers from './Detail/Analyzers/Index';
+import DataStreams from './Detail/DataStreams/Index';
 import Deployments from './Detail/Deployments/Index';
 import Information from './Detail/Information/Index';
 import Overview from './Detail/Overview/Index';
@@ -31,6 +33,7 @@ interface IProps {
   hasPermission: boolean;
   hasDeletePermission: boolean;
   canChangeActivation: boolean;
+  isTabDisabled: boolean;
   isNodeTabDisabled: boolean;
   isTelemetryTabDisabled: boolean;
   deviceLatestData: IDataStreamsLatestResponse | null;
@@ -38,7 +41,6 @@ interface IProps {
   latestLoading: boolean;
   deploymentItems: Parameters<typeof Deployments>[0]['deploymentItems'];
   deploymentLoading: boolean;
-  deploymentTotalCount: number;
   telemetryTableLoading: boolean;
   aiModelDeviceDeploymentsList: IAiModelDeviceDeploymentsResponse | null;
   aiModelsLoading: boolean;
@@ -47,7 +49,7 @@ interface IProps {
   aiModelsRowsPerPage: number;
   setAiModelsRowsPerPage: (rows: number) => void;
   fetchDeployments: (
-    params: Omit<IGetListStacksInDeviceParams, 'deviceId'>,
+    params: Pick<IGetListStacksInDeviceParams, 'sorting'>,
     signal?: AbortSignal
   ) => Promise<unknown>;
   fetchTelemetryTable: (
@@ -69,6 +71,7 @@ export default function DetailContent({
   hasPermission,
   hasDeletePermission,
   canChangeActivation,
+  isTabDisabled,
   isNodeTabDisabled,
   isTelemetryTabDisabled,
   deviceLatestData,
@@ -76,7 +79,6 @@ export default function DetailContent({
   latestLoading,
   deploymentItems,
   deploymentLoading,
-  deploymentTotalCount,
   telemetryTableLoading,
   aiModelDeviceDeploymentsList,
   aiModelsLoading,
@@ -139,7 +141,6 @@ export default function DetailContent({
         <Deployments
           deploymentItems={deploymentItems}
           loading={deploymentLoading}
-          totalCount={deploymentTotalCount}
           rowsPerPage={deploymentsRowsPerPage}
           onRowsPerPageChange={setDeploymentsRowsPerPage}
           onFetchDeployments={fetchDeployments}
@@ -159,6 +160,18 @@ export default function DetailContent({
           onFetchDeviceAiModels={fetchDeviceAiModels}
         />
       ),
+    },
+    {
+      label: 'DataStreams',
+      value: 'DataStreams',
+      disabled: isTabDisabled,
+      component: <DataStreams />,
+    },
+    {
+      label: 'Analyzers',
+      value: 'Analyzers',
+      disabled: isTabDisabled,
+      component: <Analyzers />,
     },
   ];
 

@@ -1,6 +1,10 @@
 import { Box, TextField } from '@mui/material';
 import { SelectElement } from '@shared/ui';
 
+import {
+  REGISTRY_NAME_MAX_LENGTH,
+  REGISTRY_URL_MAX_LENGTH,
+} from '../domain/registry.rules';
 import type { RegistryForm } from '../domain/types';
 import { registryOptions, type RegistryType } from '../domain/types';
 
@@ -49,18 +53,11 @@ export default function BasicInformation({
           disabled={isEdit}
           error={!!errors.registryName}
           helperText={errors.registryName}
-          slotProps={{
-            input: {
-              inputProps: {
-                maxLength: 32,
-              },
-            },
-          }}
           onChange={(e) => onChange('registryName', undefined, e.target.value)}
         />
 
         <Box className="editor-page__form-wrapper-helper">
-          {registryData?.registryName?.trim().length ?? 0}/32
+          {registryData?.registryName?.length ?? 0}/{REGISTRY_NAME_MAX_LENGTH}
         </Box>
       </Box>
 
@@ -81,6 +78,10 @@ export default function BasicInformation({
           helperText={errors.registryUrl}
           onChange={(e) => onChange('registryUrl', undefined, e.target.value)}
         />
+
+        <Box className="editor-page__form-wrapper-helper">
+          {registryData?.registryUrl?.length ?? 0}/{REGISTRY_URL_MAX_LENGTH}
+        </Box>
       </Box>
 
       <Box className="editor-page__form-wrapper">

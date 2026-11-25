@@ -1,3 +1,5 @@
+import { getResourceNameErrorMessage } from '@shared/lib/resourceName';
+
 import type { RegistryCredentials, RegistryForm } from './types';
 import {
   type RegistryFormErrors,
@@ -31,15 +33,41 @@ export const INITIAL_REGISTRY_DATA: RegistryForm = {
   },
 };
 
+export const REGISTRY_NAME_MAX_LENGTH = 32;
+export const REGISTRY_URL_MAX_LENGTH = 1024;
+
 function isValidRegistryUrl(value: string): boolean {
+  if (!/^https?:\/\//i.test(value)) return false;
+
+  let parsed: URL;
   try {
-    const parsed = new URL(value);
-    return (
-      ['http:', 'https:', 'ftp:'].includes(parsed.protocol) && !!parsed.hostname
-    );
+    parsed = new URL(value);
   } catch {
     return false;
   }
+  if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+
+  return isFullyQualifiedHost(value, parsed.hostname);
+}
+
+const IPV4_PATTERN =
+  /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+
+const FQDN_PATTERN =
+  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})$/i;
+
+function isFullyQualifiedHost(rawUrl: string, hostname: string): boolean {
+  const authority = rawUrl.replace(/^https?:\/\//i, '').split(/[/?#]/)[0];
+  const hostPort = authority.slice(authority.lastIndexOf('@') + 1);
+
+  if (hostPort.startsWith('[')) return hostname.startsWith('[');
+
+  const rawHost = hostPort.replace(/:\d*$/, '');
+  if (IPV4_PATTERN.test(rawHost)) return true;
+
+  if (IPV4_PATTERN.test(hostname)) return false;
+
+  return FQDN_PATTERN.test(hostname);
 }
 
 export function validateRegistryForm(registryData: RegistryForm): {
@@ -53,22 +81,20 @@ export function validateRegistryForm(registryData: RegistryForm): {
 
   const errors: RegistryFormErrors = { ...INITIAL_REGISTRY_ERRORS };
 
-  const name = registryData.registryName.trim();
-  if (!name) {
-    errors.registryName = 'Registry name is required';
-  } else if (!/^[a-z0-9-]+$/.test(name)) {
-    errors.registryName =
-      'Registry name can only contain lowercase letters(a-z), numbers(0-9), and hyphens(-)';
-  } else if (name.length > 32) {
-    errors.registryName = 'Registry name must not exceed 32 characters';
-  }
+  errors.registryName = getResourceNameErrorMessage(
+    registryData.registryName,
+    'Registry name',
+    REGISTRY_NAME_MAX_LENGTH
+  );
 
   const url = registryData.registryUrl.trim();
   if (!url) {
     errors.registryUrl = 'Registry URL is required';
+  } else if (registryData.registryUrl.length > REGISTRY_URL_MAX_LENGTH) {
+    errors.registryUrl = `Registry URL must not exceed ${REGISTRY_URL_MAX_LENGTH} characters.`;
   } else if (!isValidRegistryUrl(url)) {
     errors.registryUrl =
-      'The RegistryUrl field is not a valid fully-qualified http, https, or ftp URL.';
+      'The RegistryUrl field is not a valid fully-qualified http, https URL.';
   }
 
   if (!type) {
@@ -213,6 +239,52 @@ export function hasCredentialsChanged(
   return JSON.stringify(originalPayload) !== JSON.stringify(currentPayload);
 }
 
+export function validateOnChange(
+  shownErrors: RegistryFormErrors,
+  registryData: RegistryForm,
+  changedField: string
+): RegistryFormErrors {
+  const { errors: freshErrors } = validateRegistryForm(registryData);
+  const next = { ...shownErrors };
+
+  if (changedField === 'registryType') {
+    CREDENTIAL_FIELDS.forEach((field) => {
+      next[field] = '';
+    });
+  }
+
+  (Object.keys(next) as (keyof RegistryFormErrors)[]).forEach((key) => {
+    if (key === changedField || next[key]) next[key] = freshErrors[key];
+  });
+  return next;
+}
+
+const SERVER_FIELD_ALIASES: Record<string, keyof RegistryFormErrors> = {
+  password: 'userPassword',
+  userName: 'username',
+};
+
+export function applyServerFieldErrors(
+  shownErrors: RegistryFormErrors,
+  fieldErrors: Record<string, string>
+): RegistryFormErrors {
+  const next = { ...shownErrors };
+
+  Object.entries(fieldErrors).forEach(([serverName, message]) => {
+    const leaf = serverName.split('.').pop() ?? '';
+    const camel = leaf.charAt(0).toLowerCase() + leaf.slice(1);
+    const key = SERVER_FIELD_ALIASES[camel] ?? camel;
+
+    if (key in next) next[key as keyof RegistryFormErrors] = message;
+  });
+
+  return next;
+}
+
+function stripWhitespace(value?: string): string {
+  return (value ?? '').replace(/\s/g, '');
+}
+
 export function applyRegistryChange(
   prev: RegistryForm,
   category: string,
@@ -221,10 +293,10 @@ export function applyRegistryChange(
 ): RegistryForm {
   switch (category) {
     case 'registryName':
-      return { ...prev, registryName: value || '' };
+      return { ...prev, registryName: value ?? '' };
 
     case 'registryUrl':
-      return { ...prev, registryUrl: value || '' };
+      return { ...prev, registryUrl: stripWhitespace(value) };
 
     case 'registryType':
       return applyRegistryTypeChange(prev, registryType);
@@ -234,7 +306,7 @@ export function applyRegistryChange(
         ...prev,
         registryCredentials: {
           ...prev.registryCredentials,
-          username: value || '',
+          username: stripWhitespace(value),
         },
       };
 
@@ -243,7 +315,7 @@ export function applyRegistryChange(
         ...prev,
         registryCredentials: {
           ...prev.registryCredentials,
-          accessToken: value || '',
+          accessToken: stripWhitespace(value),
         },
       };
 
@@ -261,7 +333,7 @@ export function applyRegistryChange(
         ...prev,
         registryCredentials: {
           ...prev.registryCredentials,
-          accessKey: value || '',
+          accessKey: stripWhitespace(value),
         },
       };
 
@@ -270,7 +342,7 @@ export function applyRegistryChange(
         ...prev,
         registryCredentials: {
           ...prev.registryCredentials,
-          accessSecretKey: value || '',
+          accessSecretKey: stripWhitespace(value),
         },
       };
 
@@ -279,7 +351,7 @@ export function applyRegistryChange(
         ...prev,
         registryCredentials: {
           ...prev.registryCredentials,
-          region: value || '',
+          region: stripWhitespace(value),
         },
       };
 

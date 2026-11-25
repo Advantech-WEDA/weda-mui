@@ -1,6 +1,7 @@
 import { postUsersToOrg } from '@features/organizations';
 import { fetchAllPages } from '@shared/api/fetchAllPages';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { useNotification } from '@shared/ui';
@@ -50,6 +51,8 @@ export function useMemberEditorPage(mode: 'add' | 'edit') {
 
   const [allCandidates, setAllCandidates] = useState<MemberItem[]>([]);
   const [candidatesTotalCount, setCandidatesTotalCount] = useState(0);
+
+  const [candidatesPageItemCount, setCandidatesPageItemCount] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [fetchLoading, setFetchLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -80,6 +83,7 @@ export function useMemberEditorPage(mode: 'add' | 'edit') {
       if (!currentOrgId) {
         setAllCandidates([]);
         setCandidatesTotalCount(0);
+        setCandidatesPageItemCount(0);
         return;
       }
 
@@ -156,6 +160,7 @@ export function useMemberEditorPage(mode: 'add' | 'edit') {
 
         setAllCandidates(filtered);
         setCandidatesTotalCount(totalCount);
+        setCandidatesPageItemCount(candidateItems.length);
         setSelectedIds([]);
       } catch (error) {
         if (ignore) return;
@@ -163,6 +168,7 @@ export function useMemberEditorPage(mode: 'add' | 'edit') {
         console.error('Fetch add member list failed:', error);
         setAllCandidates([]);
         setCandidatesTotalCount(0);
+        setCandidatesPageItemCount(0);
         setFetchError('Failed to fetch member list');
       } finally {
         if (!ignore) {
@@ -271,7 +277,17 @@ export function useMemberEditorPage(mode: 'add' | 'edit') {
   const pagedMembers = mode === 'add' ? allCandidates : pagedFilteredMembers;
   const totalCount =
     mode === 'add' ? candidatesTotalCount : filteredMembers.length;
-  const loading = mode === 'add' ? fetchLoading : editMemberListLoading;
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount: mode === 'add' ? candidatesTotalCount : 0,
+    itemCount: mode === 'add' ? candidatesPageItemCount : 0,
+    loading: mode === 'add' ? fetchLoading : editMemberListLoading,
+  });
+  const loading =
+    (mode === 'add' ? fetchLoading : editMemberListLoading) || isResolvingPage;
   const error = mode === 'add' ? fetchError : editMemberListError;
   const hasPermission =
     mode === 'add'

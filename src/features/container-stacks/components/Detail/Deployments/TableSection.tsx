@@ -78,7 +78,8 @@ export default function TableSection({
           <TableHead>
             <TableRow className="page-table-row">
               <TableCell>Device / Container</TableCell>
-              <TableCell sx={{ width: 200 }}>Deployment status</TableCell>
+              <TableCell sx={{ width: 200 }}>Stack status</TableCell>
+              <TableCell sx={{ width: 200 }}>Container state</TableCell>
               <TableCell sx={{ width: 200 }}>Date created</TableCell>
               <TableCell sx={{ width: 200 }}>Actions</TableCell>
             </TableRow>

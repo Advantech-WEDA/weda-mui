@@ -112,7 +112,9 @@ export default function Credentials({
             revealed[field] ? 'VisibilityOutlined' : 'VisibilityOffOutlined'
           }
           className="header-startIcon"
-          sx={{ color: 'var(--common-white-_states-main)' }}
+          sx={{
+            '& svg': { fill: 'var(--action-active, rgba(0, 0, 0, 0.54))' },
+          }}
         />
       </IconButton>
     </InputAdornment>

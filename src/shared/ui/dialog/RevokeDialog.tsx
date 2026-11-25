@@ -1,4 +1,5 @@
 import { TextField } from '@mui/material';
+import { useLayoutEffect, useRef } from 'react';
 
 import ConfirmDialog from './ConfirmDialog';
 
@@ -41,6 +42,15 @@ const RevokeDialog = ({
 }: RevokeDialogProps) => {
   const isMatched = inputValue.trim() === confirmName.trim();
 
+  const onInputChangeRef = useRef(onInputChange);
+  useLayoutEffect(() => {
+    onInputChangeRef.current = onInputChange;
+  });
+
+  useLayoutEffect(() => {
+    if (open) onInputChangeRef.current('');
+  }, [open]);
+
   return (
     <ConfirmDialog
       open={open}
@@ -56,7 +66,7 @@ const RevokeDialog = ({
         },
         {
           label: deleteLabel,
-          onClick: () => void onConfirm(),
+          onClick: onConfirm,
           variant: 'text',
           color: 'primary',
           disabled: confirmDisabled,

@@ -38,7 +38,7 @@ export default function InformationTable({ columns, rows }: IProps) {
           {dataColumns.map((column, columnIndex) => (
             <LabelValueRow
               key={`${rowIndex}-${column}`}
-              label={formatLabel(column)}
+              label={formatLabel(column, true)}
               value={formatValue(row[column])}
               isLast={
                 rowIndex === rows.length - 1 &&

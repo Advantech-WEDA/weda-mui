@@ -166,7 +166,7 @@ export default function ModelEditorForm({
 
       <ConfirmDialog
         open={cancelOpen}
-        onClose={onCancel}
+        onClose={onConfirmCancel}
         title="Unsaved Changes"
         content="Do you want to leave this page? Any unsaved changes will be lost."
         actions={[

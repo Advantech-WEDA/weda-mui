@@ -73,6 +73,20 @@ const sideMenu: {
     path: 'ai-models',
     area: 'home',
   },
+  {
+    key: 'data-stream-bridges',
+    label: 'DataStream Bridges',
+    icon: 'OutboundOutlined',
+    path: 'data-stream-bridges',
+    area: 'home',
+  },
+  {
+    key: 'mqtt-brokers',
+    label: 'MQTT Brokers',
+    icon: 'DnsOutlined',
+    path: 'mqtt-brokers',
+    area: 'home',
+  },
 ];
 
 const ALWAYS_ENABLED_KEYS = new Set(['home', 'organizations']);

@@ -40,9 +40,7 @@ const RevokeClientCredentialDialog = ({
         },
         {
           label: 'Revoke',
-          onClick: () => {
-            void onConfirm();
-          },
+          onClick: onConfirm,
           variant: 'text',
           color: 'primary',
           disabled: !isMatched,

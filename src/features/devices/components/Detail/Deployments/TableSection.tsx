@@ -82,7 +82,8 @@ export default function TableSection({
           <TableHead>
             <TableRow className="page-table-row">
               <TableCell>Stack (version) / Container</TableCell>
-              <TableCell sx={{ width: 200 }}>Deployment status</TableCell>
+              <TableCell sx={{ width: 200 }}>Stack status</TableCell>
+              <TableCell sx={{ width: 200 }}>Container state</TableCell>
               <TableCell sx={{ width: 200 }}>Date created</TableCell>
               <TableCell sx={{ width: 200 }}>Actions</TableCell>
             </TableRow>
@@ -90,9 +91,11 @@ export default function TableSection({
 
           <TableBody>
             {loading ? (
-              <TableCell colSpan={4} align="center">
-                <PageTableLoadingIndicator />
-              </TableCell>
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <PageTableLoadingIndicator />
+                </TableCell>
+              </TableRow>
             ) : isInitialEmpty ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ p: 0 }}>
@@ -177,7 +180,7 @@ export default function TableSection({
         </Table>
       </TableContainer>
 
-      {rows.length !== 0 && !hasFilter && (
+      {rows.length !== 0 && (
         <Pagination
           count={totalCount}
           page={page}

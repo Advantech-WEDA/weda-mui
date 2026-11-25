@@ -6,6 +6,7 @@ import {
   useDeploymentsStore,
 } from '@features/container-stacks';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useHasManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { type SortOrder, useNotification } from '@shared/ui';
@@ -213,6 +214,15 @@ export function useDeviceDeployPage() {
     [deploymentItems]
   );
 
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: stackTableRowRows.length,
+    loading,
+  });
+
   const rows = useMemo(() => {
     const keyword = searchWord.trim().toLowerCase();
 
@@ -313,8 +323,6 @@ export function useDeviceDeployPage() {
   const handleConfirmCancel = () => {
     setCancelOpen(false);
     setSubmitOpen(false);
-    setStackTableRowRows([]);
-    setSelectedStackConfigIds([]);
   };
 
   const handleCancel = () => {
@@ -424,7 +432,7 @@ export function useDeviceDeployPage() {
 
     pageTitle,
     hasPermission,
-    loading,
+    loading: loading || isResolvingPage,
     pagedRows,
     pageStackConfigIds,
     deployedStackRevisionIds,

@@ -117,6 +117,17 @@
     .MuiOutlinedInput-root {
       min-height: 56px;
     }
+    &.editor-page__form--list {
+      max-width: none;
+
+      .MuiOutlinedInput-root {
+        min-height: unset;
+      }
+
+      > .MuiPaper-root {
+        align-self: stretch;
+      }
+    }
 
     .MuiOutlinedInput-notchedOutline {
       legend {
@@ -133,11 +144,30 @@
       }
     }
 
+    button {
+      height: 40px;
+      text-transform: none;
+      display: flex;
+      padding: var(--1, 8px) var(--2, 16px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: var(--borderRadius, 4px);
+      font-size: var(--font-size-09375-rem, 15px);
+      font-weight: var(--fontWeightMedium, 500);
+      line-height: 26px;
+      letter-spacing: 0.46px;
+      &.page-btn {
+        flex-direction: row;
+      }
+    }
+
     &-wrapper {
       width: 100%;
 
       &-textfield {
         background-color: #fff;
+
         & input {
           background-color: #fff;
         }

@@ -10,10 +10,12 @@ import type {
   IDeployStackToDevicesPayload,
   IGetDeploymentsParams,
   IGetListStacksInDeviceParams,
+  IGetStackCommandResultsParams,
   IGetStackConfigByIdParams,
   IGetStackConfigsParams,
   IStackActionPayload,
   IStackActionResponse,
+  IStackCommandResultsResponse,
   IStackConfigsItem,
   IStackConfigsListResponse,
   IUpdateStackConfigPayload,
@@ -146,6 +148,19 @@ const postStackAction = async (
   return data;
 };
 
+const getStackCommandResults = async (
+  params: IGetStackCommandResultsParams,
+  signal?: AbortSignal
+): Promise<IStackCommandResultsResponse> => {
+  const { deviceId, ...query } = params;
+  const { data } = await axiosInstance.get<IStackCommandResultsResponse>(
+    apiPath(`/api/v1/devices/${deviceId}/docker/stacks/commands/results`),
+    { params: query, signal }
+  );
+
+  return data;
+};
+
 const deleteStackFromDevice = async (
   params: IDeleteStackFromDeviceParams
 ): Promise<void> => {
@@ -202,6 +217,7 @@ export const stacksApi = {
   patchStackConfigById,
   deleteStackConfigById,
   postStackAction,
+  getStackCommandResults,
   deleteStackFromDevice,
   postDeployStackToDevices,
   getListStacksInDevice,

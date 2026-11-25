@@ -34,6 +34,7 @@ export default function AddClientCredential() {
     nameError,
     openDialog,
     clientData,
+    submitting,
     handleBasicChange,
     handleScopeChange,
     handleSubmit,
@@ -98,6 +99,7 @@ export default function AddClientCredential() {
             <Button
               variant="contained"
               className="add-client-button"
+              disabled={submitting}
               onClick={handleSubmit}
               sx={{
                 textTransform: 'none',
@@ -133,7 +135,12 @@ export default function AddClientCredential() {
                 <Button size="small" variant="outlined" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button size="small" variant="contained" onClick={handleSubmit}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={submitting}
+                  onClick={handleSubmit}
+                >
                   Submit
                 </Button>
               </Stack>

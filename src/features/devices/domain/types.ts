@@ -86,8 +86,19 @@ export const DEVICE_AI_MODEL_ROW_ACTION_MAP: Record<
 export interface AiModelEditionOption {
   edition: string;
   fileName: string | null;
+  fileSize: number | null;
+
+  expectedChecksum: string;
+
+  deviceState: string | null;
+
   disabled: boolean;
 }
+
+export type DeviceContainerNamesState =
+  | { status: 'loading' }
+  | { status: 'loaded'; names: string[] }
+  | { status: 'error' };
 
 export interface AiModelDeployTableRow {
   modelId: string;

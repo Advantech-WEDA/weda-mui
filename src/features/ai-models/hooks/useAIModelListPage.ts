@@ -1,5 +1,6 @@
 import { fetchAllPages, MAX_PAGE_SIZE } from '@shared/api/fetchAllPages';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import type { SortOrder } from '@shared/ui';
@@ -318,6 +319,8 @@ export function useAIModelListPage() {
         if (isCancel(error)) return;
 
         const message = error instanceof Error ? error.message : String(error);
+
+        setTotalCount(0);
         setLoadError(true);
         showError(message);
       } finally {
@@ -349,6 +352,15 @@ export function useAIModelListPage() {
   const handleRetryFetch = useCallback(() => {
     fetchAiModelsList();
   }, [fetchAiModelsList]);
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: aiModelItems.length,
+    loading: isFetchingList,
+  });
 
   const rows = useMemo<AiModelWithEditions[]>(() => {
     const keyword = searchWord.trim().toLowerCase();
@@ -598,7 +610,7 @@ export function useAIModelListPage() {
     setEditionInputValue,
     canDeleteEdition,
     hasPermission,
-    loading: isFetchingList,
+    loading: isFetchingList || isResolvingPage,
     loadError,
     pagedRows,
     rows,

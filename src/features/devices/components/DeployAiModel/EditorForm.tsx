@@ -1,3 +1,4 @@
+import { type DeploySetup, DeploySetupSection } from '@features/ai-models';
 import {
   Box,
   Button,
@@ -17,13 +18,28 @@ import {
 import { useRef } from 'react';
 
 import TableSection from '@/features/devices/components/DeployAiModel/TableSection';
-import type { AiModelDeployTableRow } from '@/features/devices/domain/types';
+import type {
+  AiModelDeployTableRow,
+  DeviceContainerNamesState,
+} from '@/features/devices/domain/types';
 
-const TAB_ITEMS = [{ key: 'basic', label: 'AI model list' }];
+const TAB_ITEMS = [
+  { key: 'setup', label: 'Deploy setup' },
+  { key: 'basic', label: 'AI model list' },
+];
 
 interface IProps {
   pageTitle: string;
   hasPermission: boolean;
+  canSubmit: boolean;
+  deploySetup: DeploySetup;
+  deploySetupErrors: { maxUsagePercent?: string };
+  isRestartContainer: boolean;
+  isChecksumVerify: boolean;
+  containerByModelId: Record<string, string>;
+  deviceContainers: DeviceContainerNamesState | null;
+  onDeploySetupChange: (patch: Partial<DeploySetup>) => void;
+  onContainerChange: (modelId: string, containerName: string) => void;
   loading: boolean;
   pagedRows: AiModelDeployTableRow[];
   pageModelIds: string[];
@@ -33,6 +49,7 @@ interface IProps {
   visibleTotalCount: number;
   hasFilter: boolean;
   cancelOpen: boolean;
+  submitting: boolean;
   submitOpen: boolean;
   selectedModelIds: string[];
   setPage: (page: number) => void;
@@ -52,6 +69,15 @@ interface IProps {
 export default function EditorForm({
   pageTitle,
   hasPermission,
+  canSubmit,
+  deploySetup,
+  deploySetupErrors,
+  isRestartContainer,
+  isChecksumVerify,
+  containerByModelId,
+  deviceContainers,
+  onDeploySetupChange,
+  onContainerChange,
   loading,
   pagedRows,
   pageModelIds,
@@ -61,6 +87,7 @@ export default function EditorForm({
   visibleTotalCount,
   hasFilter,
   cancelOpen,
+  submitting,
   submitOpen,
   selectedModelIds,
   setPage,
@@ -76,9 +103,15 @@ export default function EditorForm({
   onOpenCancelDialog,
   onOpenSubmitDialog,
 }: IProps) {
+  const setupRef = useRef<HTMLDivElement | null>(null);
   const basicRef = useRef<HTMLDivElement | null>(null);
 
   const sections = [
+    {
+      key: 'setup',
+      ref: setupRef,
+      id: 'deploy-setup-section',
+    },
     {
       key: 'basic',
       ref: basicRef,
@@ -111,7 +144,7 @@ export default function EditorForm({
             <Button
               variant="contained"
               className="editor-page__header-actions-btn-submit"
-              disabled={selectedModelIds.length === 0 || !hasPermission}
+              disabled={!canSubmit}
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedModelIds.length})
@@ -124,6 +157,15 @@ export default function EditorForm({
 
       <Box className="editor-page__content">
         <Box className="editor-page__left">
+          <Box id="deploy-setup-section" ref={setupRef}>
+            <DeploySetupSection
+              setup={deploySetup}
+              errors={deploySetupErrors}
+              showExpectedChecksum={false}
+              onChange={onDeploySetupChange}
+            />
+          </Box>
+
           <Box id="basic-information-section" ref={basicRef}>
             <Box sx={{ p: 2 }}>
               <Typography variant="h5">AI model list</Typography>
@@ -183,6 +225,11 @@ export default function EditorForm({
               setPage(0);
             }}
             onEditionChange={handleEditionChange}
+            isRestartContainer={isRestartContainer}
+            isChecksumVerify={isChecksumVerify}
+            containerByModelId={containerByModelId}
+            deviceContainers={deviceContainers}
+            onContainerChange={onContainerChange}
           />
 
           <Stack
@@ -204,7 +251,7 @@ export default function EditorForm({
               size="small"
               variant="contained"
               className="editor-page__footer__btn-submit"
-              disabled={selectedModelIds.length === 0 || !hasPermission}
+              disabled={!canSubmit}
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedModelIds.length})
@@ -219,7 +266,7 @@ export default function EditorForm({
 
       <ConfirmDialog
         open={cancelOpen}
-        onClose={onCancel}
+        onClose={onConfirmCancel}
         title="Unsaved Changes"
         content="Do you want to leave this page? Any unsaved changes will be lost."
         actions={[
@@ -240,6 +287,7 @@ export default function EditorForm({
         content="Are you sure you want to deploy the selected AI model(s) to this device?"
         confirmLabel="Deploy"
         onClose={onConfirmCancel}
+        loading={submitting}
         onConfirm={onSubmit}
       />
     </Box>

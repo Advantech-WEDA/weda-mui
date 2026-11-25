@@ -1,4 +1,4 @@
-import { SimpleConfirmDialog } from '@shared/ui';
+import { DeleteConfirmDialog } from '@shared/ui';
 
 import Detail from '../components/Detail';
 import { useRegistryDetailPage } from '../hooks/useRegistriesPage';
@@ -22,11 +22,12 @@ export default function DetailRegistry() {
         onEdit={handleEdit}
       />
 
-      <SimpleConfirmDialog
+      <DeleteConfirmDialog
         open={dialogOpen}
         title="Delete Registry"
         content={`Are you sure you want to delete registry "${registryData?.registryName}" (${registryId})? This action cannot be undone.`}
-        confirmLabel="Delete"
+        confirmName={registryData?.registryName ?? ''}
+        nameLabel="registry"
         onClose={() => setDialogOpen(false)}
         onConfirm={handleConfirmDelete}
       />

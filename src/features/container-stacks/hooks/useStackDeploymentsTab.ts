@@ -9,12 +9,16 @@ import { useParams } from 'react-router-dom';
 
 import {
   type Action,
+  countStackStatusCards,
   type DeploymentDeviceRow,
   DEPLOYMENTS_REFRESH_INTERVAL,
+  getStackStatusCard,
   type Status,
   type TableHeaderSortKey,
 } from '../domain/types';
 import { useDeploymentsStore } from '../store/useDeploymentsStore';
+import { type RedeployTarget, useRedeployConfirm } from './useRedeployConfirm';
+import { useStackCommand } from './useStackCommand';
 
 export function useStackDeploymentsTab() {
   const { stackRevisionId, stackConfigId } = useParams<{
@@ -40,6 +44,9 @@ export function useStackDeploymentsTab() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const isPollingRef = useRef(false);
+
+  const lastErrorMessageRef = useRef<string | null>(null);
+
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const hasPermission = useHasManagementPermission();
@@ -49,15 +56,13 @@ export function useStackDeploymentsTab() {
 
   const loading = useDeploymentsStore((s) => s.loading);
 
-  const totalCount = useDeploymentsStore((s) => s.totalCount);
-
   const deploymentItems = useDeploymentsStore((s) => s.deploymentItems);
 
   const deviceItems = useDeviceStore((s) => s.deviceItems);
 
-  const GET_DEPLOYMENTS = useDeploymentsStore((s) => s.GET_DEPLOYMENTS);
+  const GET_ALL_DEPLOYMENTS = useDeploymentsStore((s) => s.GET_ALL_DEPLOYMENTS);
   const GET_ALL_DEVICES = useDeviceStore((s) => s.GET_ALL_DEVICES);
-  const POST_STACK_ACTION = useDeploymentsStore((s) => s.POST_STACK_ACTION);
+  const { runStackCommand } = useStackCommand();
 
   const DELETE_STACK_FROM_DEVICE = useDeploymentsStore(
     (s) => s.DELETE_STACK_FROM_DEVICE
@@ -71,37 +76,37 @@ export function useStackDeploymentsTab() {
       if (!currentOrgId || !stackRevisionId) return;
 
       try {
-        await GET_DEPLOYMENTS(
+        await GET_ALL_DEPLOYMENTS(
           {
             orgId: currentOrgId,
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
             sorting: `${sortKey} ${sortOrder}`,
-
             stackRevisionId: [stackRevisionId],
           },
-          signal
+          signal,
+          { keepItems: true }
         );
+
+        if (signal?.aborted) return;
+
+        lastErrorMessageRef.current = null;
+        setLastUpdated(new Date());
       } catch (error) {
         if (axios.isCancel(error)) return;
 
         const message = error instanceof Error ? error.message : String(error);
 
+        if (message === lastErrorMessageRef.current) return;
+
+        lastErrorMessageRef.current = message;
         showError(message);
-      } finally {
-        if (!signal?.aborted) {
-          setLastUpdated(new Date());
-        }
       }
     },
     [
       currentOrgId,
       stackRevisionId,
-      page,
-      rowsPerPage,
       sortKey,
       sortOrder,
-      GET_DEPLOYMENTS,
+      GET_ALL_DEPLOYMENTS,
       showError,
     ]
   );
@@ -183,7 +188,8 @@ export function useStackDeploymentsTab() {
             false);
 
         const matchStatusFilter =
-          !statusFilter || deployment.status === statusFilter;
+          !statusFilter ||
+          getStackStatusCard(deployment.status) === statusFilter;
 
         return matchSearchWord && matchStatusFilter;
       })
@@ -215,19 +221,18 @@ export function useStackDeploymentsTab() {
 
   const hasFilter = Boolean(searchWord || statusFilter);
 
-  const pagedRows = rows;
+  const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
 
-  const statusCounts = useMemo<Partial<Record<Status, number>>>(() => {
-    return {
-      pending: deploymentItems.filter((v) => v.status === 'pending').length,
-      deploying: deploymentItems.filter((v) => v.status === 'deploying').length,
-      running: deploymentItems.filter((v) => v.status === 'running').length,
-      paused: deploymentItems.filter((v) => v.status === 'paused').length,
-      error: deploymentItems.filter((v) => v.status === 'error').length,
-      exited: deploymentItems.filter((v) => v.status === 'exited').length,
-      retry: deploymentItems.filter((v) => v.status === 'retry').length,
-    };
-  }, [deploymentItems]);
+  const pagedRows = rows.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
+
+  const statusCounts = useMemo<Partial<Record<Status, number>>>(
+    () => countStackStatusCards(deploymentItems),
+    [deploymentItems]
+  );
 
   const handleAdd = () => {
     if (!hasPermission) return;
@@ -251,14 +256,17 @@ export function useStackDeploymentsTab() {
     setStatusFilter('');
     setSortKey('createdAt');
     setSortOrder('desc');
+    setPage(0);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handleClose = () => {
@@ -306,37 +314,19 @@ export function useStackDeploymentsTab() {
   ) => {
     if (!hasPermission) return;
 
-    try {
-      await POST_STACK_ACTION({
-        deviceId,
-        stackConfigId,
-        action,
-      });
+    await runStackCommand(
+      { deviceId, stackConfigId, action },
+      { onStatusUnknown: () => fetchDeployments() }
+    );
 
-      showSuccess('Stack action performed successfully');
-
-      fetchDeployments();
-
-      handleClose();
-    } catch (err: unknown) {
-      let message = 'Stack action failed';
-
-      if (err instanceof Error) {
-        message = err.message;
-      }
-
-      showError(message);
-      console.error('[Stack action] failed:', message);
-    } finally {
-      handleClose();
-    }
+    handleClose();
   };
 
-  const handleDeploy = async (
-    deviceId: string,
-    stackConfigId: string,
-    stackRevisionId: string
-  ) => {
+  const redeploy = async ({
+    deviceId,
+    stackConfigId,
+    stackRevisionId,
+  }: RedeployTarget) => {
     if (!hasPermission) return;
 
     if (!currentOrgId) {
@@ -355,8 +345,6 @@ export function useStackDeploymentsTab() {
       showSuccess('Stack deployed successfully');
 
       fetchDeployments();
-
-      handleClose();
     } catch (err: unknown) {
       let message = 'Stack deploy failed';
 
@@ -366,10 +354,28 @@ export function useStackDeploymentsTab() {
 
       showError(message);
       console.error('[Stack deploy] failed:', message);
-    } finally {
-      handleClose();
     }
   };
+
+  const {
+    redeployTarget,
+    redeployLoading,
+    handleOpenRedeploy,
+    handleCloseRedeploy,
+    handleConfirmRedeploy,
+  } = useRedeployConfirm(redeploy);
+
+  const redeployRow = rows.find(
+    (row) => row.deviceId === redeployTarget?.deviceId
+  );
+
+  const deleteStackRow = rows.find(
+    (row) => row.deviceId === selectedDeleteStack?.deviceId
+  );
+  const deleteStackDeviceName =
+    deleteStackRow?.deviceName && deleteStackRow.deviceName !== '-'
+      ? deleteStackRow.deviceName
+      : '';
 
   return {
     loading: loading && !isPollingRef.current,
@@ -379,18 +385,20 @@ export function useStackDeploymentsTab() {
     statusCounts,
     statusFilter,
     searchWord,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
     dialogOpenDeleteStack,
+    deleteStackDeviceName,
+    deleteStackName: deleteStackRow?.stackName ?? '',
 
-    visibleTotalCount: hasFilter ? rows.length : totalCount,
+    visibleTotalCount: rows.length,
     hasFilter,
     setPage,
     setRowsPerPage,
 
-    setStatusFilter,
+    setStatusFilter: handleStatusFilterChange,
     handleSearchChange,
     handleStatusFilterChange,
     handleSort,
@@ -400,6 +408,15 @@ export function useStackDeploymentsTab() {
     handleOpenDeleteStack,
     handleConfirmDeleteStack,
     handleAction,
-    handleDeploy,
+    handleDeploy: handleOpenRedeploy,
+    redeployDialog: {
+      open: redeployTarget !== null,
+      stackName: redeployRow?.stackName,
+      version: redeployRow?.version,
+      deviceName: redeployRow?.deviceName,
+      loading: redeployLoading,
+      onClose: handleCloseRedeploy,
+      onConfirm: handleConfirmRedeploy,
+    },
   };
 }

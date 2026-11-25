@@ -23,14 +23,35 @@ import {
 } from '@shared/ui';
 import { useRef } from 'react';
 
+import type {
+  DeploySetup,
+  DeploySetupErrors,
+  DeviceContainersState,
+  EditionChecksumStatus,
+} from '@/features/ai-models/domain/deploySetup';
+
 import type { DeployDeviceRow } from '../../api/aiModels.api.types';
+import DeploySetupSection from './DeploySetupSection';
 import TableSection from './TableSection';
 
-const TAB_ITEMS = [{ key: 'basic', label: 'Device list' }];
+const TAB_ITEMS = [
+  { key: 'setup', label: 'Deploy setup' },
+  { key: 'basic', label: 'Device list' },
+];
 
 interface IProps {
   pageTitle: string;
+  deploySetup: DeploySetup;
+  deploySetupErrors: DeploySetupErrors;
+  editionChecksumStatus: EditionChecksumStatus;
+  isRestartContainer: boolean;
+  containerByDeviceId: Record<string, string>;
+  deviceContainers: Record<string, DeviceContainersState>;
+  onDeploySetupChange: (patch: Partial<DeploySetup>) => void;
+  onContainerChange: (deviceId: string, containerName: string) => void;
+
   hasPermission: boolean;
+  canSubmit: boolean;
   loading: boolean;
   displayRows: DeployDeviceRow[];
   disabledDeviceIds: string[];
@@ -44,6 +65,7 @@ interface IProps {
   visibleTotalCount: number;
   hasFilter: boolean;
   cancelOpen: boolean;
+  submitting: boolean;
   submitOpen: boolean;
   selectedDeviceIds: string[];
   setPage: (page: number) => void;
@@ -63,7 +85,15 @@ interface IProps {
 
 export default function EditorForm({
   pageTitle,
-  hasPermission,
+  deploySetup,
+  deploySetupErrors,
+  editionChecksumStatus,
+  isRestartContainer,
+  containerByDeviceId,
+  deviceContainers,
+  onDeploySetupChange,
+  onContainerChange,
+  canSubmit,
   loading,
   displayRows,
   disabledDeviceIds,
@@ -77,6 +107,7 @@ export default function EditorForm({
   visibleTotalCount,
   hasFilter,
   cancelOpen,
+  submitting,
   submitOpen,
   selectedDeviceIds,
   setPage,
@@ -93,8 +124,14 @@ export default function EditorForm({
   onOpenCancelDialog,
   onOpenSubmitDialog,
 }: IProps) {
+  const setupRef = useRef<HTMLDivElement | null>(null);
   const basicRef = useRef<HTMLDivElement | null>(null);
   const sections = [
+    {
+      key: 'setup',
+      ref: setupRef,
+      id: 'deploy-setup-section',
+    },
     {
       key: 'basic',
       ref: basicRef,
@@ -128,7 +165,7 @@ export default function EditorForm({
             <Button
               variant="contained"
               className="editor-page__header-actions-btn-submit"
-              disabled={selectedDeviceIds.length === 0 || !hasPermission}
+              disabled={!canSubmit}
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedDeviceIds.length})
@@ -141,6 +178,15 @@ export default function EditorForm({
 
       <Box className="editor-page__content">
         <Box className="editor-page__left">
+          <Box id="deploy-setup-section" ref={setupRef}>
+            <DeploySetupSection
+              setup={deploySetup}
+              errors={deploySetupErrors}
+              checksumStatus={editionChecksumStatus}
+              onChange={onDeploySetupChange}
+            />
+          </Box>
+
           <Box id="basic-information-section" ref={basicRef}>
             <Box sx={{ p: 2 }}>
               <Typography variant="h5">Device list</Typography>
@@ -174,7 +220,7 @@ export default function EditorForm({
                     onChange={(value) =>
                       handleStatusFilterChange(value as Status | '')
                     }
-                    placeholder="Device status"
+                    placeholder="Registration status"
                     minWidth={147}
                     options={statusOptions}
                   />
@@ -201,6 +247,10 @@ export default function EditorForm({
             sortOrder={sortOrder}
             disabledDeviceIds={disabledDeviceIds}
             selectedDeviceIds={selectedDeviceIds}
+            isRestartContainer={isRestartContainer}
+            containerByDeviceId={containerByDeviceId}
+            deviceContainers={deviceContainers}
+            onContainerChange={onContainerChange}
             onSelectDevice={onSelectDevice}
             onSelectAll={() => onSelectAll(selectableDeviceIds)}
             onSort={handleSort}
@@ -233,7 +283,7 @@ export default function EditorForm({
               size="small"
               variant="contained"
               className="editor-page__footer__btn-submit"
-              disabled={selectedDeviceIds.length === 0}
+              disabled={!canSubmit}
               onClick={onOpenSubmitDialog}
             >
               Submit ({selectedDeviceIds.length})
@@ -248,7 +298,7 @@ export default function EditorForm({
 
       <ConfirmDialog
         open={cancelOpen}
-        onClose={onCancel}
+        onClose={onConfirmCancel}
         title="Unsaved Changes"
         content="Do you want to leave this page? Any unsaved changes will be lost."
         actions={[
@@ -269,6 +319,7 @@ export default function EditorForm({
         content={'Are you sure you want to deploy to selected devices?'}
         confirmLabel="Deploy"
         onClose={onConfirmCancel}
+        loading={submitting}
         onConfirm={onSubmit}
       />
     </Box>

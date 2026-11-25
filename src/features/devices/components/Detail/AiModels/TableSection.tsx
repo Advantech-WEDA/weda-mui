@@ -26,7 +26,6 @@ interface IProps {
   onClearAll: () => void;
   onPageChange: (e: unknown, newPage: number) => void;
   onRowsPerPageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRetry: (row: DeviceAiModelRow) => void;
   onDelete: (row: DeviceAiModelRow) => void;
 }
 
@@ -41,7 +40,6 @@ export default function TableSection({
   onClearAll,
   onPageChange,
   onRowsPerPageChange,
-  onRetry,
   onDelete,
 }: IProps) {
   const isEmpty = !loading && rows.length === 0;
@@ -72,9 +70,11 @@ export default function TableSection({
 
           <TableBody>
             {loading ? (
-              <TableCell colSpan={5} align="center">
-                <PageTableLoadingIndicator />
-              </TableCell>
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <PageTableLoadingIndicator />
+                </TableCell>
+              </TableRow>
             ) : isInitialEmpty ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ p: 0 }}>
@@ -118,7 +118,6 @@ export default function TableSection({
                   key={row.id}
                   row={row}
                   hasPermission={hasPermission}
-                  onRetry={onRetry}
                   onDelete={onDelete}
                 />
               ))

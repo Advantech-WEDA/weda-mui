@@ -216,6 +216,30 @@
       color: var(--text-secondary, rgba(0, 0, 0, 0.6));
     }
   }
+
+  &.is-current {
+    cursor: not-allowed;
+    opacity: 0.38;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+}
+.switch-org-tree .MuiTreeItem-root.is-current > .MuiTreeItem-content {
+  cursor: not-allowed;
+
+  &:hover {
+    background-color: transparent;
+  }
+
+  .org-label {
+    opacity: 0.38;
+  }
+
+  .MuiTreeItem-iconContainer {
+    cursor: pointer;
+  }
 }
 
 .search-result-left {

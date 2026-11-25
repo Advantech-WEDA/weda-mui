@@ -126,7 +126,13 @@ export function useStackDetailPage() {
     );
   };
 
+  const canDelete =
+    hasPermission &&
+    stackData.stackName !== '' &&
+    inputValue.trim() === stackData.stackName.trim();
+
   const handleDeleteConfirmOpen = () => {
+    setInputValue('');
     setDeleteOpen(true);
   };
 
@@ -135,7 +141,7 @@ export function useStackDetailPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!stackConfigId || !stackRevisionId || !currentOrgId || !hasPermission) {
+    if (!stackConfigId || !stackRevisionId || !currentOrgId || !canDelete) {
       return;
     }
 
@@ -170,6 +176,7 @@ export function useStackDetailPage() {
     inputValue,
     setInputValue,
     hasPermission,
+    canDelete,
     stackData,
     handleChangeTab,
     handleEdit,

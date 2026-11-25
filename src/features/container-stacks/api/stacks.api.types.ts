@@ -127,6 +127,46 @@ export interface IStackActionResponse {
   message: string;
 }
 
+export interface IGetStackCommandResultsParams {
+  deviceId: string;
+  stackConfigId: string;
+
+  range?: 'latest' | 'all';
+  skipCount?: number;
+  maxResultCount?: number;
+}
+
+export interface IStackCommandResultData {
+  deviceCmd: string | null;
+
+  phase: string | null;
+
+  status: number | null;
+  message: string | null;
+
+  resultData?: Record<string, unknown> | null;
+
+  error?: { code?: string | null; message?: string | null } | null;
+  createdAt: string | null;
+  executedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface IStackCommandResultItem {
+  deviceId: string;
+  seqId: number;
+
+  reqSeqId: string | null;
+  rspSeqId: string | null;
+  cmd: string | null;
+  data: IStackCommandResultData | null;
+}
+
+export interface IStackCommandResultsResponse {
+  totalCount: number;
+  items: IStackCommandResultItem[];
+}
+
 export interface IDeployStackToDevicesPayload {
   orgId: string;
   stackConfigId: string;

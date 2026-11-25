@@ -7,12 +7,23 @@ export type {
   IGetAiModelDeviceDeploymentsParams,
 } from '@/features/ai-models/api/aiModels.api.types';
 export { DEFAULT_AI_MODEL_DEPLOYMENT_TASKS } from '@/features/ai-models/api/aiModels.api.types';
+export { buildDeploymentTargets } from '@/features/ai-models/api/deploymentTargets';
+export { default as DeploySetupSection } from '@/features/ai-models/components/Deploy/DeploySetupSection';
 export { default as AiModelEditionInformation } from '@/features/ai-models/components/Detail/Information/Index';
 export {
   editionDeploymentStateChipProps,
   editionDeploymentStatusChipProps,
   editionDeploymentStatusOptions,
 } from '@/features/ai-models/components/editionDeploymentStatusDisplay';
+export { formatFileSize } from '@/features/ai-models/components/fileSizeDisplay';
+export {
+  DEFAULT_DEPLOY_SETUP,
+  type DeploySetup,
+  getRunningContainerNames,
+  isRestartContainerApply,
+  parseEditionChecksum,
+  validateDeploySetup,
+} from '@/features/ai-models/domain/deploySetup';
 export type {
   DeploymentDeviceState,
   DeploymentStatusGroup,

@@ -11,16 +11,10 @@ import type { DeviceAiModelRow } from '@/features/devices/domain/types';
 interface IProps {
   row: DeviceAiModelRow;
   hasPermission: boolean;
-  onRetry: (row: DeviceAiModelRow) => void;
   onDelete: (row: DeviceAiModelRow) => void;
 }
 
-export default function TableContent({
-  row,
-  hasPermission,
-  onRetry,
-  onDelete,
-}: IProps) {
+export default function TableContent({ row, hasPermission, onDelete }: IProps) {
   const { tenant } = useParams<'tenant'>();
 
   if (!tenant) {
@@ -103,7 +97,6 @@ export default function TableContent({
         <ActionButtons
           row={row}
           hasPermission={hasPermission}
-          onRetry={onRetry}
           onDelete={onDelete}
         />
       </TableCell>

@@ -1,5 +1,7 @@
 import type { AppChipStyle, Tone, ToneAppearance } from '@shared/ui';
 
+import type { StackDeploymentStatus } from '../domain/types';
+
 export interface StatusChipProps {
   label?: string;
   tone?: Tone;
@@ -8,54 +10,85 @@ export interface StatusChipProps {
   config?: AppChipStyle;
 }
 
-type ToneEntry = { label: string; tone: Tone };
+type KnownStackStatus = Exclude<StackDeploymentStatus, 'unknown'>;
 
-const DEPLOYMENT_STATUS_TONES: Record<string, ToneEntry> = {
-  running: { label: 'Running', tone: 'success' },
-  deploying: { label: 'Deploying', tone: 'info' },
-  paused: { label: 'Paused', tone: 'warning' },
-  error: { label: 'Error', tone: 'error' },
+const STACK_DEPLOYMENT_STATUS_CHIPS: Record<
+  KnownStackStatus,
+  { label: string; tone: Tone }
+> = {
   pending: { label: 'Pending', tone: 'info' },
-  exited: { label: 'Exited', tone: 'error' },
-  retry: { label: 'Retrying', tone: 'error' },
-};
-
-const CONTAINER_STATUS_TONES: Record<string, ToneEntry> = {
-  running: { label: 'Running', tone: 'success' },
   deploying: { label: 'Deploying', tone: 'info' },
-  paused: { label: 'Paused', tone: 'warning' },
-  error: { label: 'Error', tone: 'error' },
-  pending: { label: 'Pending', tone: 'info' },
+  awaitingDeployedStatus: { label: 'Awaiting deployed status', tone: 'info' },
+  running: { label: 'Running', tone: 'success' },
+  deployed: { label: 'Deployed', tone: 'success' },
+  completed: { label: 'Completed', tone: 'success' },
   exited: { label: 'Exited', tone: 'secondary' },
+  paused: { label: 'Paused', tone: 'warning' },
+  stopped: { label: 'Stopped', tone: 'neutral' },
+  removing: { label: 'Removing', tone: 'info' },
+  awaitingRemovedStatus: { label: 'Awaiting removed status', tone: 'info' },
+  awaitingCleanup: { label: 'Awaiting cleanup', tone: 'info' },
   retry: { label: 'Retrying', tone: 'neutral' },
+  error: { label: 'Error', tone: 'error' },
 };
 
-const UNKNOWN_DEPLOYMENT_STATUS: AppChipStyle = {
-  label: 'Unknown',
-  color: '#757575',
-  backgroundColor: '#F5F5F5',
-  borderColor: '#757575',
-};
-
-const UNKNOWN_CONTAINER_STATUS: AppChipStyle = {
+const UNKNOWN_STACK_DEPLOYMENT_STATUS: AppChipStyle = {
   label: 'Unknown',
   color: 'var(--text-primary, rgba(0, 0, 0, 0.87))',
   backgroundColor: '#F5F5F5',
   borderColor: '#757575',
 };
 
-export function deploymentStatusChipProps(status?: string): StatusChipProps {
-  if (status === 'unknown') return { config: UNKNOWN_DEPLOYMENT_STATUS };
+type ContainerState =
+  | 'created'
+  | 'running'
+  | 'paused'
+  | 'restarting'
+  | 'exited'
+  | 'dead';
 
-  const entry = DEPLOYMENT_STATUS_TONES[status ?? ''];
+const CONTAINER_STATE_CHIPS: Record<
+  ContainerState,
+  { label: string; tone: Tone }
+> = {
+  created: { label: 'Created', tone: 'info' },
+  running: { label: 'Running', tone: 'success' },
+  paused: { label: 'Paused', tone: 'warning' },
+  restarting: { label: 'Restarting', tone: 'info' },
+  exited: { label: 'Exited', tone: 'error' },
+  dead: { label: 'Dead', tone: 'error' },
+};
 
-  return entry ? { ...entry, appearance: 'outlined' } : {};
+function findKey<K extends string>(
+  table: Record<K, unknown>,
+  value: string
+): K | undefined {
+  const lower = value.toLowerCase();
+
+  return (Object.keys(table) as K[]).find((key) => key.toLowerCase() === lower);
 }
 
-export function containerStatusChipProps(status?: string): StatusChipProps {
-  if (status === 'unknown') return { config: UNKNOWN_CONTAINER_STATUS };
+export function stackDeploymentStatusChipProps(
+  status?: string
+): StatusChipProps {
+  if (!status) return {};
+  if (status.toLowerCase() === 'unknown') {
+    return { config: UNKNOWN_STACK_DEPLOYMENT_STATUS };
+  }
 
-  const entry = CONTAINER_STATUS_TONES[status ?? ''];
+  const key = findKey(STACK_DEPLOYMENT_STATUS_CHIPS, status);
 
-  return entry ? { ...entry, appearance: 'filled' } : {};
+  return key
+    ? { ...STACK_DEPLOYMENT_STATUS_CHIPS[key], appearance: 'filled' }
+    : { label: status, tone: 'neutral', appearance: 'filled' };
+}
+
+export function containerStateChipProps(state?: string): StatusChipProps {
+  if (!state) return {};
+
+  const key = findKey(CONTAINER_STATE_CHIPS, state);
+
+  return key
+    ? { ...CONTAINER_STATE_CHIPS[key], appearance: 'outlined' }
+    : { label: state, tone: 'neutral', appearance: 'outlined' };
 }

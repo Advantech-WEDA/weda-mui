@@ -1,19 +1,31 @@
 import {
-  DEFAULT_AI_MODEL_DEPLOYMENT_TASKS,
-  getDeploymentStatusGroup,
-  type IAiModelDeploymentTask,
+  buildDeploymentTargets,
+  DEFAULT_DEPLOY_SETUP,
+  type DeploySetup,
+  getRunningContainerNames,
+  isRestartContainerApply,
+  parseEditionChecksum,
   useAIModelsStore,
+  validateDeploySetup,
 } from '@features/ai-models';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { useNotification } from '@shared/ui';
 import axios from 'axios';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import type { AiModelDeployTableRow } from '@/features/devices/domain/types';
+import type {
+  AiModelDeployTableRow,
+  DeviceContainerNamesState,
+} from '@/features/devices/domain/types';
 import { useDeviceStore } from '@/features/devices/store/useDeviceStore';
+
+const getSelectedEdition = (row: AiModelDeployTableRow) =>
+  row.editions.find((edition) => edition.edition === row.selectedEdition);
+
 export function useDeviceDeployAiModelPage() {
   const navigate = useAppNavigate();
 
@@ -38,9 +50,30 @@ export function useDeviceDeployAiModelPage() {
 
   const [totalCount, setTotalCount] = useState(0);
 
+  const [pageModelCount, setPageModelCount] = useState(0);
+
   const POST_AI_MODEL_DEPLOYMENT = useAIModelsStore(
     (s) => s.POST_AI_MODEL_DEPLOYMENT
   );
+  const GET_DEVICE_CAPABILITIES = useDeviceStore(
+    (s) => s.GET_DEVICE_CAPABILITIES
+  );
+
+  const [deploySetup, setDeploySetup] =
+    useState<DeploySetup>(DEFAULT_DEPLOY_SETUP);
+  const isRestartContainer = isRestartContainerApply(deploySetup.apply);
+  const isChecksumVerify = deploySetup.validate === 'CHECKSUM_VERIFY';
+
+  const deploySetupErrors = useMemo(() => {
+    const { maxUsagePercent } = validateDeploySetup(deploySetup);
+    return maxUsagePercent ? { maxUsagePercent } : {};
+  }, [deploySetup]);
+
+  const [containerByModelId, setContainerByModelId] = useState<
+    Record<string, string>
+  >({});
+  const [deviceContainers, setDeviceContainers] =
+    useState<DeviceContainerNamesState | null>(null);
 
   const [searchWord, setSearchWord] = useState<string>('');
   const [page, setPage] = useState(0);
@@ -94,15 +127,20 @@ export function useDeviceDeployAiModelPage() {
           GET_ALL_DEVICE_AI_MODELS({ deviceId }, signal),
         ]);
 
-        const deployedOrPendingEditionKeys = new Set(
-          (deviceModelsResponse.items ?? [])
-            .filter((item) => {
-              const group = getDeploymentStatusGroup(item.state);
+        const deviceStateByEditionKey = new Map<string, string>();
 
-              return group === 'Completed' || group === 'InProgress';
-            })
-            .map((item) => `${item.modelId}::${item.edition}`)
-        );
+        [...(deviceModelsResponse.items ?? [])]
+          .sort((a, b) =>
+            (a.updatedAt ?? a.createdAt).localeCompare(
+              b.updatedAt ?? b.createdAt
+            )
+          )
+          .forEach((item) => {
+            deviceStateByEditionKey.set(
+              `${item.modelId}::${item.edition}`,
+              item.state
+            );
+          });
 
         const modelItems = modelsResponse.items ?? [];
 
@@ -130,9 +168,19 @@ export function useDeviceDeployAiModelPage() {
               .map((item) => ({
                 edition: item.edition,
                 fileName: item.file?.fileName ?? null,
-                disabled: deployedOrPendingEditionKeys.has(
-                  `${model.modelId}::${item.edition}`
-                ),
+                fileSize: item.file?.fileSize ?? null,
+                expectedChecksum: parseEditionChecksum(
+                  item.file?.fileHash,
+                  item.file?.hashAlg
+                ).expectedChecksum,
+                deviceState:
+                  deviceStateByEditionKey.get(
+                    `${model.modelId}::${item.edition}`
+                  ) ?? null,
+              }))
+              .map((option) => ({
+                ...option,
+                disabled: option.deviceState !== null,
               }));
 
             if (editions.length === 0) return null;
@@ -151,6 +199,7 @@ export function useDeviceDeployAiModelPage() {
 
         setAiModelTableRows(newRows);
         setTotalCount(modelsResponse.totalCount);
+        setPageModelCount(modelItems.length);
       } catch (error) {
         if (axios.isCancel(error)) return;
 
@@ -182,6 +231,100 @@ export function useDeviceDeployAiModelPage() {
 
     return () => controller.abort();
   }, [fetchDevices, fetchAiModelTableRows]);
+
+  const containersFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isRestartContainer || !deviceId || containersFetchedRef.current) {
+      return;
+    }
+
+    let ignore = false;
+    let settled = false;
+
+    containersFetchedRef.current = true;
+
+    GET_DEVICE_CAPABILITIES(deviceId)
+      .then((capabilities) => {
+        if (ignore) return;
+        settled = true;
+        setDeviceContainers({
+          status: 'loaded',
+          names: getRunningContainerNames(capabilities?.data?.reported),
+        });
+      })
+      .catch(() => {
+        if (ignore) return;
+        settled = true;
+        containersFetchedRef.current = false;
+        setDeviceContainers({ status: 'error' });
+      });
+
+    return () => {
+      ignore = true;
+
+      if (!settled) containersFetchedRef.current = false;
+    };
+  }, [isRestartContainer, deviceId, GET_DEVICE_CAPABILITIES]);
+
+  const deviceContainersView: DeviceContainerNamesState | null =
+    isRestartContainer && !deviceContainers
+      ? { status: 'loading' }
+      : deviceContainers;
+
+  const handleDeploySetupChange = (patch: Partial<DeploySetup>) => {
+    setDeploySetup((prev) => ({ ...prev, ...patch }));
+
+    if (patch.apply && deviceContainers?.status === 'error') {
+      setDeviceContainers(null);
+    }
+  };
+
+  const handleContainerChange = (modelId: string, containerName: string) => {
+    setContainerByModelId((prev) => ({ ...prev, [modelId]: containerName }));
+  };
+
+  const getRowSetup = useCallback(
+    (row: AiModelDeployTableRow): DeploySetup => ({
+      ...deploySetup,
+      expectedChecksum: getSelectedEdition(row)?.expectedChecksum ?? '',
+    }),
+    [deploySetup]
+  );
+
+  const isRowReady = useCallback(
+    (row: AiModelDeployTableRow) =>
+      Object.keys(validateDeploySetup(getRowSetup(row))).length === 0 &&
+      (!isRestartContainer || Boolean(containerByModelId[row.modelId])),
+    [getRowSetup, isRestartContainer, containerByModelId]
+  );
+
+  const selectedRows = useMemo(
+    () =>
+      selectedModelIds
+        .map((id) => aiModelTableRows.find((row) => row.modelId === id))
+        .filter((row): row is AiModelDeployTableRow => Boolean(row)),
+    [selectedModelIds, aiModelTableRows]
+  );
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const submittingRef = useRef(false);
+
+  const canSubmit =
+    hasPermission &&
+    !submitting &&
+    selectedRows.length > 0 &&
+    selectedRows.every(isRowReady);
+
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: pageModelCount,
+    loading,
+  });
 
   const rows = useMemo(() => {
     const keyword = searchWord.trim().toLowerCase();
@@ -242,23 +385,23 @@ export function useDeviceDeployAiModelPage() {
   const handleConfirmCancel = () => {
     setCancelOpen(false);
     setSubmitOpen(false);
-    setAiModelTableRows([]);
-    setSelectedModelIds([]);
   };
 
   const handleCancel = () => {
+    if (submittingRef.current) return;
+
     handleConfirmCancel();
     navigate(`/devices/${deviceId}/ai-models`);
   };
 
   const handleSubmitConfirmOpen = () => {
-    if (!hasPermission) return;
+    if (!hasPermission || submittingRef.current) return;
 
     setSubmitOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!hasPermission) return;
+    if (!hasPermission || submittingRef.current) return;
 
     if (!currentOrgId) {
       showError('Organization is required');
@@ -270,68 +413,64 @@ export function useDeviceDeployAiModelPage() {
       return;
     }
 
-    if (selectedModelIds.length === 0) {
+    if (selectedRows.length === 0) {
       showError('Please select at least one AI model');
       return;
     }
 
-    const deployPayloads = selectedModelIds
-      .map((selectedId) => {
-        const row = aiModelTableRows.find(
-          (item) => item.modelId === selectedId
-        );
-
-        if (!row) return null;
-
-        return {
-          modelName: row.modelName,
-          payload: {
-            orgId: currentOrgId,
-            modelId: row.modelId,
-            edition: row.selectedEdition,
-            targets: [
-              {
-                deviceIdList: [deviceId],
-                tasks: DEFAULT_AI_MODEL_DEPLOYMENT_TASKS,
-              },
-            ],
-          },
-        };
-      })
-      .filter(
-        (
-          item
-        ): item is {
-          modelName: string;
-          payload: {
-            orgId: string;
-            modelId: string;
-            edition: string;
-            targets: {
-              deviceIdList: string[];
-              tasks: IAiModelDeploymentTask[];
-            }[];
-          };
-        } => item !== null
+    if (!selectedRows.every(isRowReady)) {
+      showError(
+        'Please complete the deploy setup for the selected AI model(s)'
       );
+      return;
+    }
+
+    const deployPayloads = selectedRows.map((row) => ({
+      modelId: row.modelId,
+      modelName: row.modelName,
+      payload: {
+        orgId: currentOrgId,
+        modelId: row.modelId,
+        edition: row.selectedEdition,
+        targets: buildDeploymentTargets(getRowSetup(row), [deviceId], {
+          [deviceId]: containerByModelId[row.modelId] ?? '',
+        }),
+      },
+    }));
 
     const successList: string[] = [];
-    const failedList: string[] = [];
+    const successModelIds: string[] = [];
+    const failedList: { modelName: string; message: string }[] = [];
 
-    for (const item of deployPayloads) {
-      try {
-        await POST_AI_MODEL_DEPLOYMENT(item.payload);
+    submittingRef.current = true;
+    setSubmitting(true);
 
-        successList.push(item.modelName);
-      } catch (error) {
-        console.error('[DeployDeviceAiModel] Deploy failed:', {
-          modelName: item.modelName,
-          payload: item.payload,
-          error,
-        });
+    try {
+      for (const item of deployPayloads) {
+        try {
+          await POST_AI_MODEL_DEPLOYMENT(item.payload);
 
-        failedList.push(item.modelName);
+          successList.push(item.modelName);
+          successModelIds.push(item.modelId);
+        } catch (error) {
+          console.error('[DeployDeviceAiModel] Deploy failed:', {
+            modelName: item.modelName,
+            payload: item.payload,
+            error,
+          });
+
+          failedList.push({
+            modelName: item.modelName,
+            message:
+              error instanceof Error && error.message
+                ? error.message
+                : 'Deploy failed',
+          });
+        }
       }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
 
     if (successList.length > 0) {
@@ -339,7 +478,14 @@ export function useDeviceDeployAiModelPage() {
     }
 
     if (failedList.length > 0) {
-      showError(`Deploy failed: ${failedList.join(', ')}`);
+      failedList.forEach(({ modelName, message }) => {
+        showError(`Deploy failed (${modelName}): ${message}`);
+      });
+
+      setSelectedModelIds((prev) =>
+        prev.filter((id) => !successModelIds.includes(id))
+      );
+      setSubmitOpen(false);
       return;
     }
 
@@ -349,6 +495,7 @@ export function useDeviceDeployAiModelPage() {
 
   return {
     cancelOpen,
+    submitting,
     submitOpen,
     selectedModelIds,
     handleSelectModel,
@@ -358,10 +505,20 @@ export function useDeviceDeployAiModelPage() {
     handleConfirmCancel,
     handleSubmitConfirmOpen,
     setCancelOpen,
+    canSubmit,
+
+    deploySetup,
+    deploySetupErrors,
+    isRestartContainer,
+    isChecksumVerify,
+    containerByModelId,
+    deviceContainers: deviceContainersView,
+    handleDeploySetupChange,
+    handleContainerChange,
 
     pageTitle,
     hasPermission,
-    loading,
+    loading: loading || isResolvingPage,
     pagedRows,
     pageModelIds,
     searchWord,

@@ -1,4 +1,5 @@
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
+import { usePageClamp } from '@shared/lib/usePageClamp';
 import { useManagementPermission } from '@shared/session/useHasManagementPermission';
 import { useOrgContentStore } from '@shared/session/useOrgContentStore';
 import { type SortOrder, useNotification } from '@shared/ui';
@@ -122,7 +123,17 @@ export function useMemberListPage() {
 
   const rows = memberList?.items ?? [];
   const totalCount = memberList?.totalCount ?? 0;
-  const isInitialLoading = memberListLoading && !hasLoadedOnceRef.current;
+  const isResolvingPage = usePageClamp({
+    page,
+    setPage,
+    rowsPerPage,
+    totalCount,
+    itemCount: rows.length,
+    loading: memberListLoading,
+  });
+
+  const isInitialLoading =
+    (memberListLoading && !hasLoadedOnceRef.current) || isResolvingPage;
 
   const handleAdd = () => {
     navigate('/members/add');
@@ -168,7 +179,10 @@ export function useMemberListPage() {
     handleSort,
     handleAdd,
     handleClearFilters,
-    handleRetryFetch: fetchMembers,
+
+    handleRetryFetch: () => {
+      void fetchMembers();
+    },
     handleSearchChange,
     handleRoleFilterChange,
     handlePageChange,

@@ -1,6 +1,8 @@
+import { ApiError } from '@shared/api/ApiError';
 import { apiPath } from '@shared/api/apiPath';
 import axiosInstance from '@shared/api/axiosInstance';
 import { callApi } from '@shared/api/callApi';
+import { extractFieldErrors } from '@shared/api/extractErrorMessage';
 import axios from 'axios';
 
 import type { RegistrySubmitPayload } from '../domain/types';
@@ -44,9 +46,9 @@ const rethrowRegistryHostExists = (error: unknown): never => {
     (error.response.data as { title?: string } | undefined)?.title ===
       REGISTRY_HOST_EXISTS_TITLE
   ) {
-    throw new Error(
-      'A registry with the same host already exists in this organization.'
-    );
+    const message =
+      'A registry with the same host already exists in this organization.';
+    throw new ApiError(message, message, extractFieldErrors(error));
   }
 
   throw error;

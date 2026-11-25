@@ -1,10 +1,15 @@
 import {
   type Action,
+  countStackStatusCards,
+  getStackStatusCard,
   type IDeploymentItem,
   type IGetListStacksInDeviceParams,
+  type RedeployTarget,
   type Status,
   type TableHeaderSortKey,
   useDeploymentsStore,
+  useRedeployConfirm,
+  useStackCommand,
 } from '@features/container-stacks';
 import { useAppNavigate } from '@shared/lib/useAppNavigate';
 import { useHasManagementPermission } from '@shared/session/useHasManagementPermission';
@@ -19,11 +24,10 @@ import { CONTAINER_STACKS_REFRESH_INTERVAL } from '../domain/types';
 interface Input {
   deploymentItems: IDeploymentItem[];
   loading: boolean;
-  totalCount: number;
   rowsPerPage: number;
   onRowsPerPageChange: (rows: number) => void;
   onFetchDeployments: (
-    params: Omit<IGetListStacksInDeviceParams, 'deviceId'>,
+    params: Pick<IGetListStacksInDeviceParams, 'sorting'>,
     signal?: AbortSignal
   ) => Promise<unknown>;
 }
@@ -31,7 +35,6 @@ interface Input {
 export function useDeviceStacksTab({
   deploymentItems,
   loading,
-  totalCount,
   rowsPerPage,
   onRowsPerPageChange: setRowsPerPage,
   onFetchDeployments,
@@ -64,7 +67,7 @@ export function useDeviceStacksTab({
   const { showError, showSuccess } = useNotification();
   const { currentOrgId } = useOrgContentStore();
 
-  const POST_STACK_ACTION = useDeploymentsStore((s) => s.POST_STACK_ACTION);
+  const { runStackCommand } = useStackCommand();
 
   const DELETE_STACK_FROM_DEVICE = useDeploymentsStore(
     (s) => s.DELETE_STACK_FROM_DEVICE
@@ -83,11 +86,7 @@ export function useDeviceStacksTab({
 
       try {
         await onFetchDeployments(
-          {
-            skipCount: page * rowsPerPage,
-            maxResultCount: rowsPerPage,
-            sorting: `${sortKey} ${sortOrder}`,
-          },
+          { sorting: `${sortKey} ${sortOrder}` },
           signal
         );
       } catch (error) {
@@ -102,15 +101,7 @@ export function useDeviceStacksTab({
         }
       }
     },
-    [
-      deviceId,
-      showError,
-      onFetchDeployments,
-      page,
-      rowsPerPage,
-      sortKey,
-      sortOrder,
-    ]
+    [deviceId, showError, onFetchDeployments, sortKey, sortOrder]
   );
 
   const didMountRef = useRef(false);
@@ -152,7 +143,8 @@ export function useDeviceStacksTab({
       const stackName = item.stackName?.toLowerCase() ?? '';
 
       const matchKeyword = !keyword || stackName.includes(keyword);
-      const matchStatus = !statusFilter || item.status === statusFilter;
+      const matchStatus =
+        !statusFilter || getStackStatusCard(item.status) === statusFilter;
 
       return matchKeyword && matchStatus;
     });
@@ -160,19 +152,18 @@ export function useDeviceStacksTab({
 
   const hasFilter = Boolean(searchWord || statusFilter);
 
-  const pagedRows = rows;
+  const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
 
-  const statusCounts = useMemo<Partial<Record<Status, number>>>(() => {
-    return {
-      pending: deploymentItems.filter((v) => v.status === 'pending').length,
-      deploying: deploymentItems.filter((v) => v.status === 'deploying').length,
-      running: deploymentItems.filter((v) => v.status === 'running').length,
-      paused: deploymentItems.filter((v) => v.status === 'paused').length,
-      error: deploymentItems.filter((v) => v.status === 'error').length,
-      exited: deploymentItems.filter((v) => v.status === 'exited').length,
-      retry: deploymentItems.filter((v) => v.status === 'retry').length,
-    };
-  }, [deploymentItems]);
+  const pagedRows = rows.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
+
+  const statusCounts = useMemo<Partial<Record<Status, number>>>(
+    () => countStackStatusCards(deploymentItems),
+    [deploymentItems]
+  );
 
   const selectedStack = deploymentItems.find(
     (item) => item.stackConfigId === selectedDeleteStack?.stackConfigId
@@ -217,14 +208,17 @@ export function useDeviceStacksTab({
     setStatusFilter('');
     setSortKey('createdAt');
     setSortOrder('asc');
+    setPage(0);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchWord(value);
+    setPage(0);
   };
 
   const handleStatusFilterChange = (value: Status | '') => {
     setStatusFilter(value);
+    setPage(0);
   };
 
   const handleClose = () => {
@@ -272,37 +266,19 @@ export function useDeviceStacksTab({
   ) => {
     if (!hasPermission) return;
 
-    try {
-      await POST_STACK_ACTION({
-        deviceId,
-        stackConfigId,
-        action,
-      });
+    await runStackCommand(
+      { deviceId, stackConfigId, action },
+      { onStatusUnknown: () => fetchDeployments() }
+    );
 
-      showSuccess('Stack action performed successfully');
-
-      fetchDeployments();
-
-      handleClose();
-    } catch (err: unknown) {
-      let message = 'Stack action failed';
-
-      if (err instanceof Error) {
-        message = err.message;
-      }
-
-      showError(message);
-      console.error('[Stack action] failed:', message);
-    } finally {
-      handleClose();
-    }
+    handleClose();
   };
 
-  const handleDeploy = async (
-    deviceId: string,
-    stackConfigId: string,
-    stackRevisionId: string
-  ) => {
+  const redeploy = async ({
+    deviceId,
+    stackConfigId,
+    stackRevisionId,
+  }: RedeployTarget) => {
     if (!hasPermission) return;
 
     if (!currentOrgId) {
@@ -321,8 +297,6 @@ export function useDeviceStacksTab({
       showSuccess('Stack deployed successfully');
 
       fetchDeployments();
-
-      handleClose();
     } catch (err: unknown) {
       let message = 'Stack deploy failed';
 
@@ -332,10 +306,20 @@ export function useDeviceStacksTab({
 
       showError(message);
       console.error('[Stack deploy] failed:', message);
-    } finally {
-      handleClose();
     }
   };
+
+  const {
+    redeployTarget,
+    redeployLoading,
+    handleOpenRedeploy,
+    handleCloseRedeploy,
+    handleConfirmRedeploy,
+  } = useRedeployConfirm(redeploy);
+
+  const redeployStack = deploymentItems.find(
+    (item) => item.stackConfigId === redeployTarget?.stackConfigId
+  );
 
   return {
     hasPermission,
@@ -345,18 +329,19 @@ export function useDeviceStacksTab({
     statusCounts,
     statusFilter,
     searchWord,
-    page,
+    page: currentPage,
     rowsPerPage,
     sortKey,
     sortOrder,
     hasFilter,
-    visibleTotalCount: hasFilter ? rows.length : totalCount,
+    visibleTotalCount: rows.length,
     dialogOpenDeleteStack,
     selectedStackName: selectedStack?.stackName,
     selectedStackVersion: selectedStack?.version,
     setPage,
     setRowsPerPage,
-    setStatusFilter,
+
+    setStatusFilter: handleStatusFilterChange,
     setDialogOpenDeleteStack,
     handleSearchChange,
     handleStatusFilterChange,
@@ -367,6 +352,15 @@ export function useDeviceStacksTab({
     handleOpenDeleteStack,
     handleConfirmDeleteStack,
     handleAction,
-    handleDeploy,
+    handleDeploy: handleOpenRedeploy,
+
+    redeployDialog: {
+      open: redeployTarget !== null,
+      stackName: redeployStack?.stackName,
+      version: redeployStack?.version,
+      loading: redeployLoading,
+      onClose: handleCloseRedeploy,
+      onConfirm: handleConfirmRedeploy,
+    },
   };
 }
